@@ -3,7 +3,8 @@
 **Rank leads by what they're likely to earn, not just whether they'll book.**
 When experts can't call everyone, the top of the queue should hold the most expected revenue. Every other lead still gets the AI agent or nurture.
 
-> **Quick look:** download `Lead_Priority_Console.html` and open it in any browser. The trained model runs inside the page, no install needed.
+> **Live console:** https://yash-1273.github.io/lead-priority-console/ (the trained model runs inside the page, no install needed).
+> Offline: download `Lead_Priority_Console.html` and open it in any browser.
 
 Standard lead scoring ranks leads by how likely they are to convert. At University Living that misses half the picture.
 Commission follows the rent, and students enquire on a specific property, so **the value of a lead is known the moment it arrives.**
