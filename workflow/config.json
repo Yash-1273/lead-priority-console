@@ -1,0 +1,27 @@
+{
+ "columns": [
+  "no_email",
+  "no_call",
+  "visits",
+  "minutes_browsing",
+  "pages_per_visit",
+  "profile_fields_filled",
+  "channel_origin_App / platform lead",
+  "channel_origin_Bulk import (fairs, uni lists)",
+  "channel_origin_Counsellor / partner submitted",
+  "channel_origin_Website enquiry form",
+  "channel_source_Counsellor / referral",
+  "channel_source_Direct traffic",
+  "channel_source_Other",
+  "channel_source_Search (SEO)",
+  "channel_source_Social / affiliate sites",
+  "channel_source_Unknown",
+  "channel_source_Website chat (SABIE-like)"
+ ],
+ "medians": {
+  "visits": 3.0,
+  "minutes_browsing": 4.183333333333334,
+  "pages_per_visit": 2.0
+ },
+ "value_cut": 1078.0
+}

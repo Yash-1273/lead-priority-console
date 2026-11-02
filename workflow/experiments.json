@@ -1,0 +1,96 @@
+{
+ "models": [
+  {
+   "name": "Current model (gradient boosting)",
+   "auc": 0.86,
+   "top20_precision": 0.847
+  },
+  {
+   "name": "Logistic regression",
+   "auc": 0.842,
+   "top20_precision": 0.822
+  },
+  {
+   "name": "Random forest",
+   "auc": 0.86,
+   "top20_precision": 0.854
+  },
+  {
+   "name": "Tuned gradient boosting",
+   "auc": 0.858,
+   "top20_precision": 0.852
+  }
+ ],
+ "form_answers": {
+  "without": {
+   "auc": 0.86,
+   "top20_precision": 0.847
+  },
+  "with": {
+   "auc": 0.875,
+   "top20_precision": 0.879
+  }
+ },
+ "ablations": [
+  {
+   "name": "All signals",
+   "auc": 0.86,
+   "top20_precision": 0.847
+  },
+  {
+   "name": "Without form completeness",
+   "auc": 0.822,
+   "top20_precision": 0.811
+  },
+  {
+   "name": "Without browsing behaviour",
+   "auc": 0.763,
+   "top20_precision": 0.718
+  },
+  {
+   "name": "Channel only",
+   "auc": 0.641,
+   "top20_precision": 0.588
+  }
+ ],
+ "sensitivity": [
+  {
+   "loss_multiplier": 0.25,
+   "gain": 0.0492
+  },
+  {
+   "loss_multiplier": 0.5,
+   "gain": 0.0504
+  },
+  {
+   "loss_multiplier": 1,
+   "gain": 0.0502
+  },
+  {
+   "loss_multiplier": 2,
+   "gain": 0.0531
+  },
+  {
+   "loss_multiplier": 4,
+   "gain": 0.0485
+  }
+ ],
+ "extras": [
+  {
+   "extras_inr": 0,
+   "gain": 0.0653
+  },
+  {
+   "extras_inr": 7500,
+   "gain": 0.0573
+  },
+  {
+   "extras_inr": 15000,
+   "gain": 0.0502
+  },
+  {
+   "extras_inr": 30000,
+   "gain": 0.0396
+  }
+ ]
+}

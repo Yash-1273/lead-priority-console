@@ -1,0 +1,14 @@
+# Local only: earlier versions, preview server files, generated output
+versions/
+preview/
+workflow/output/
+.claude/
+
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Not used by the current project (rejected rent sample, retired first report)
+data/uk_rent_listings.csv
+data/results.json
