@@ -2,15 +2,20 @@
 
 The question is not "who is likely to book?" but "which lead is worth an expert's time right now?"
 
-    Priority = P(book)  x  Revenue value                       -> decides WHO gets an expert first
-               (model)     (rent commission + per-student extras)
-    Days to move-in                                 -> decides HOW FAST (response SLA)
+    Priority = chance to book NOW  x  revenue value  x  visa grant rate     -> decides WHO gets an expert next
+    chance now = chance at enquiry (model)  x  fade (days the lead has been open)
+    After 5 unanswered calls a lead moves to nurture                       -> stops wasting expert calls
+    Days to move-in                                                        -> decides HOW FAST (response SLA)
 
-Urgency was tested as a third ranking factor in a 30-day simulation and lost: lead volume exceeds team
-capacity, so a lead not called today is rarely called later. Urgency belongs in the SLA, not the ranking.
+New and ongoing leads are scored the same way and worked from one queue. Each part comes from real data:
+  chance at enquiry   X Education leads (Kaggle): only information available when the lead arrives
+  fade                Olist marketing funnel: days from first contact to a closed deal; half close within 14 days
+  5-call limit        UCI Bank Marketing: 41,188 customers called repeatedly; by the 5th call the chance a call
+                      converts is under half the 1st, and it keeps falling
+  visa grant rate     Home Office: ~96% of Indian students' UK study visas granted (No Visa, No Pay)
 
-Only information available when a lead arrives is used. At University Living a student enquires on a
-specific property, so city, room type and move-in date are known at arrival, and so is the lead's value.
+Tested in a 60-day simulation and rejected: ranking by move-in urgency, and lowering each lead's chance per
+unanswered call with the bank curve (it loses if students need even one more call than bank customers did).
 """
 from pathlib import Path
 import json
@@ -72,12 +77,16 @@ def commission_value(city, room, weeks, rate=COMMISSION_RATE):
     return WEEKLY_RENT[(city, room)] * weeks * rate
 
 
-# ---- Lead decay (simulation assumption) -----------------------------------------------------------
-def daily_loss_rate(days_to_move_in):
-    """ASSUMPTION: chance per day that an uncontacted lead books elsewhere or drops out.
-    Students close to move-in decide within days; next-year students can wait."""
-    d = np.asarray(days_to_move_in, dtype=float)
-    return np.select([d <= 30, d <= 90, d <= 180], [0.30, 0.12, 0.04], 0.015)
+# ---- Ongoing leads: fading over time and the 5-call limit (curves learned in pipeline.learn_shapes) ----
+VISA_GRANT = 0.96   # Home Office 2025: ~96% of Indian nationals' UK sponsored-study visas granted
+
+
+CALL_LIMIT = 5      # bank data: by the 5th call the chance a call converts is under half the 1st; then nurture
+
+
+def fade_factor(days_open, shapes):
+    """Share of a lead's chance left after it has been open this many days (1.0 on the day it arrives)."""
+    return np.interp(np.asarray(days_open, dtype=float), shapes['fade_days'], shapes['fade'])
 
 
 # ---- Routing: match the cost of the channel to the value of the lead ---------------------------
@@ -176,19 +185,28 @@ class LeadPriorityEngine:
 
     def score(self, leads: pd.DataFrame, rate=COMMISSION_RATE, extras_inr=ANCILLARY_INR) -> pd.DataFrame:
         out = leads.copy()
+        for col in ('attempts', 'days_open'):               # new leads: no calls yet, open for 0 days
+            out[col] = out[col].fillna(0) if col in out else 0
         out['p_book'] = self.model.predict_proba(design(out, self.cfg['columns'], self.cfg['medians']))[:, 1]
+        shapes = self.cfg.get('shapes')
+        out['p_now'] = out.p_book * (fade_factor(out.days_open, shapes) if shapes else 1)
+        out['stage'] = np.where(out.attempts == 0, 'New', 'Follow-up')
         out['commission'] = [commission_value(c, r, w, rate) for c, r, w in zip(out.city, out.room, out.weeks)]
         out['extras'] = extras_inr / GBP_TO_INR
         out['value'] = out.commission + out.extras          # revenue if this student books (GBP)
-        out['priority'] = out.p_book * out.value            # expected revenue from working this lead
+        out['priority'] = out.p_now * out.value * VISA_GRANT  # expected revenue from working this lead now
         high_value = out.commission >= self.cfg['value_cut'] * rate / COMMISSION_RATE
-        keys = zip(np.where(out.p_book >= P_HIGH, 'high', 'low'), np.where(high_value, 'high', 'low'))
+        keys = zip(np.where(out.p_now >= P_HIGH, 'high', 'low'), np.where(high_value, 'high', 'low'))
         routes = [ROUTES[k] for k in keys]
         out['owner'] = [r[0] for r in routes]
         out['action'] = [r[1] for r in routes]
         out['play'] = [r[2] for r in routes]
-        out['sla'] = [sla(d, p, h) for d, p, h in zip(out.days_to_move_in, out.p_book, high_value)]
+        out['sla'] = [sla(d, p, h) for d, p, h in zip(out.days_to_move_in, out.p_now, high_value)]
         # Consent is a rule, not a feature: no phone calls to students who opted out
+        # After 5 unanswered calls, stop spending expert calls: move to nurture until the student acts again
+        tired = out.attempts >= CALL_LIMIT
+        out.loc[tired, ['owner', 'play', 'sla']] = ['Nurture automation', 'Nurture', '24 hours']
+        out.loc[tired, 'action'] = f'{CALL_LIMIT} unanswered calls: WhatsApp + email nurture; back to the queue if they act'
         opted_out = (out.no_call == 1) & (out.owner != 'Nurture automation')
         out.loc[opted_out, 'action'] = 'Personal WhatsApp from the owner (student opted out of calls)'
         return out
@@ -203,6 +221,6 @@ class LeadPriorityEngine:
         if profile_fields_filled is not None:
             updated['profile_fields_filled'] = profile_fields_filled
         after = self.score(pd.DataFrame([updated]), rate, extras_inr).iloc[0]
-        return {'lead': updated, 'p_before': before.p_book, 'p_after': after.p_book,
+        return {'lead': updated, 'p_before': before.p_now, 'p_after': after.p_now,
                 'play_before': before.play, 'play_after': after.play, 'sla_after': after.sla,
                 'priority_before': before.priority, 'priority_after': after.priority}

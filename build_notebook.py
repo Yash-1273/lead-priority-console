@@ -23,10 +23,10 @@ Sections:
 3. University Living funnel insights (channels, browsing behaviour)
 4. Build the score (only information available at arrival)
 5. Business result: bookings captured for the same sales effort
-6. **From probability to priority:** P(book) × commission value, and the 30-day test
+6. **From probability to priority:** chance now × value, time fade and the 5-call limit from real data, the 60-day test of new + ongoing leads
 7. Routing: match the channel's cost to the lead's value
 8. Continuous re-scoring
-9. Stress tests: algorithms, form answers, ablations, assumption sensitivity
+9. Stress tests: algorithms, form answers, ablations, scenarios
 10. Limitations and next steps""")
 
 code("""import pandas as pd, numpy as np, json, warnings
@@ -216,115 +216,157 @@ print(f'Top 50%: {cap(.5):.0%} of bookings')""")
 md("""## 6. From probability to priority
 **Rank leads by what they're likely to earn, not just whether they'll book.**
 
-Standard lead scoring stops at section 5: *who is likely to book?* At University Living that misses half the picture.
-The company earns a commission on the rent, and every student enquires **on a specific property**, so the lead's value is known at arrival.
+Standard lead scoring stops at section 5: *who is likely to book?* At University Living that misses two things:
+1. **Value.** Commission follows the rent, and every student enquires **on a specific property**, so the lead's value is known at arrival.
+2. **Time.** A booking takes days to weeks, so every day the team chooses between **new leads and ongoing ones**.
 
-**Priority = P(book) × Revenue value**, where revenue value = rent commission (weekly rent × tenancy weeks × commission rate)
-+ per-student extras (flights, money transfer, guarantor: an assumed ₹15,000 per booking). Extras are earned whatever the rent, so they narrow the gap between cheap and expensive rooms.
+```
+Priority      = chance to book NOW × revenue value × visa grant rate
+chance now    = chance at enquiry (section 5 model) × fade (days the lead has been open)
+5-call limit  : after 5 unanswered calls a lead moves to nurture, until the student acts again
+revenue value = rent commission + per-student extras (assumed ₹15,000)
+```
 
-From here on, the notebook uses the production engine in `workflow/` (the same code the console runs):
-- `engine.py`: mapping, value layer, routing, re-scoring
-- `train.py`: model training and the 30-day simulation
-- `experiments.py`: stress tests
-
-The property each lead enquired on (city, room, tenancy, move-in date) is **simulated**, because X Education has no such fields.
-It's drawn independently of the booking outcome, so no link between value and intent is invented.""")
+Each part comes from real data. The datasets are **not merged** (they describe different people); each answers one question.
+From here on the notebook uses the production code in `workflow/`.""")
 
 code("""import sys; sys.path.insert(0, 'workflow')
-from engine import WEEKLY_RENT, COMMISSION_RATE, GBP_TO_INR, inr, LeadPriorityEngine, simulate_enquiry_context, from_crm
+from engine import WEEKLY_RENT, COMMISSION_RATE, GBP_TO_INR, VISA_GRANT, inr, LeadPriorityEngine
 W = json.load(open('workflow/console_data.json')); X = json.load(open('workflow/experiments.json'))
+PIPE = json.load(open('workflow/pipeline.json')); SH = json.load(open('workflow/config.json'))['shapes']
 rent = pd.Series(WEEKLY_RENT).unstack()
 print(f'Weekly rent in rupees (published 2025/26 surveys in GBP, converted at ₹{GBP_TO_INR} per £):')
 display(rent.apply(lambda col: col.map(inr)))
 print(f'Commission value ranges from {inr(min(WEEKLY_RENT.values()) * 44 * COMMISSION_RATE)} '
-      f'to {inr(max(WEEKLY_RENT.values()) * 51 * COMMISSION_RATE)} per booking at a {COMMISSION_RATE:.0%} rate: a 2.6x spread.')""")
+      f'to {inr(max(WEEKLY_RENT.values()) * 51 * COMMISSION_RATE)} per booking at a {COMMISSION_RATE:.0%} rate: a 2.6x spread.')
+print(f'Visa grant rate (Home Office, Indian nationals, 2025): {VISA_GRANT:.0%}')""")
 
-md("""### 6a. Where the two rankings disagree
-Same day, same 25 expert calls. Standard scoring picks by probability; priority picks by expected revenue.""")
+md("""### 6a. Two real-data curves for ongoing leads
+- **When to stop calling (UCI Bank Marketing, 41,188 customers called repeatedly):** the chance that the *k*-th call converts, given no "yes" before it.
+  Computed this way (not "conversion by number of calls") to avoid survivor bias: people who said yes early stopped being called.
+  By the 5th call it is under half the 1st and keeps falling, which sets the **5-call limit**. The bank's *call duration* column is only known after a call, so it is never used.
+- **Fade (Olist marketing funnel, 8,000 leads):** days from first contact to a closed deal, using only leads with at least 180 days to close.""")
+
+code("""fig, (a1, a2) = plt.subplots(1, 2, figsize=(10, 3.4))
+a1.bar(range(1, 9), SH['call_mult'][:8], color=BLUE); a1.set_xlabel('Call number'); a1.set_ylabel('Worth vs the 1st call')
+a1.set_title('Each extra call is worth less', loc='left', fontweight='bold')
+a2.plot(SH['fade_days'][:10], SH['fade'][:10], color=GREEN, marker='o', lw=2); a2.set_xlabel('Days the lead has been open')
+a2.set_ylabel('Share of chance left'); a2.set_title('Chances fade within weeks', loc='left', fontweight='bold')
+plt.tight_layout(); plt.savefig('charts/fatigue_fade.png'); plt.show()
+print('k-th call vs the 1st (sets the 5-call limit):', SH['call_mult'][:8]); print('Fade at days', SH['fade_days'][:8], '->', SH['fade'][:8])""")
+
+md("""### 6b. One real day: where the two rankings disagree
+Today's queue: 92 new leads plus 40 ongoing follow-ups (their call history comes from the 60-day test). Same 25 expert calls.
+Some ongoing leads have already booked elsewhere; the team can't see that, but the replay can.""")
 
 code("""eng = LeadPriorityEngine()
-day = eng.score(pd.DataFrame(W['inbox']).drop(columns='p_book'))
-std_top = set(day.nlargest(25, 'p_book').lead_id); pri_top = set(day.nlargest(25, 'priority').lead_id)
-day['revenue_inr'] = day.value.map(inr); day['priority_inr'] = day.priority.map(inr)
-show = ['lead_id', 'city', 'room', 'weeks', 'p_book', 'revenue_inr', 'priority_inr']
-print('Called by standard scoring only:'); display(day[day.lead_id.isin(std_top - pri_top)][show].round(2).sort_values('p_book', ascending=False).head(4))
-print('Called by priority only:'); display(day[day.lead_id.isin(pri_top - std_top)].sort_values('priority', ascending=False)[show].round(2).head(4))
-for name, ids in [('Standard', std_top), ('Priority', pri_top)]:
-    t = day[day.lead_id.isin(ids)]
-    print(f'{name:9} real outcome: {int(t.booked.sum())} bookings, {inr((t.booked * t.value).sum())} revenue')""")
+new = pd.DataFrame(W['inbox']).assign(arrival=lambda d: range(len(d)))
+ongoing = pd.DataFrame(PIPE['ongoing']).assign(arrival=lambda d: -1000 - d.days_open)
+day = eng.score(pd.concat([new, ongoing], ignore_index=True).drop(columns='p_book'))
+day['moved_on'] = day.moved_on.eq(True); day['real'] = (day.booked == 1) & ~day.moved_on; day['first'] = -day.arrival
+pick = lambda key: day.sort_values([key, 'first'], ascending=False).head(25)
+std, pri = pick('p_book'), pick('priority')
+show = ['lead_id', 'stage', 'attempts', 'days_open', 'city', 'room', 'p_book', 'p_now', 'value', 'priority']
+print('Called by standard scoring only:'); display(std[~std.lead_id.isin(pri.lead_id)][show].round(2).head(4))
+print('Called by priority only:'); display(pri[~pri.lead_id.isin(std.lead_id)][show].round(2).head(4))
+for name, t in [('Standard', std), ('Priority', pri)]:
+    print(f'{name:9} real outcome: {int(t.real.sum())} real bookers reached, {inr((t.real * t.value * VISA_GRANT).sum())} after visa risk')""")
 
-md("""### 6b. The 30-day test, and an idea that failed
-A single day is noisy. In the simulation, held-out leads arrive at about 92 a day; each day the team calls a fixed number, chosen by the rule.
-Uncalled leads may be lost each day, faster when move-in is near.
+md("""### 6c. The 60-day test, and an idea that failed
+2,772 held-out leads arrive at ~92 a day for 30 days; the test runs for 60. Each booker needs a number of calls drawn from the bank data and keeps
+looking for a number of days drawn from the Olist data. Every rule gets the same calls, the same follow-up spacing (2 days) and the same 5-call limit,
+so standard scoring is a realistic baseline, not a strawman.
 
-I also tested a third factor, **urgency** (days to move-in), in the ranking. It made results **worse**: lead volume exceeds capacity,
-so a lead not called today is rarely called later. Urgency now sets the response deadline instead of the ranking order.""")
+Two ideas were tested and **dropped**:
+- **Move-in urgency** on top of priority: lead volume exceeds capacity, so a lead pushed to "later" is rarely called at all.
+- **Precise call fatigue** (lowering each lead's chance per unanswered call with the bank curve): it won when students behaved like the bank's
+  customers but lost if they needed one more call. The simple 5-call limit is robust (see section 9).""")
 
-code("""sim = {r: pd.DataFrame(v, columns=['calls', 'commission', 'bookings']).set_index('calls') for r, v in W['sim'].items()}
-rel = pd.DataFrame({r: sim[r].commission / sim['probability'].commission - 1 for r in sim}) * 100
+code("""caps, cur = PIPE['caps'], PIPE['curve']
+rel = pd.DataFrame({r: [v[0] / s[0] - 1 for v, s in zip(cur[r], cur['standard'])] for r in cur}, index=caps) * 100
 fig, ax = plt.subplots(figsize=(7.5, 3.8))
 ax.axhline(0, color=GREY, ls=':', lw=1, label='Standard score (baseline)')
-ax.plot(rel.index, rel.priority, color=GREEN, lw=2.5, marker='o', ms=4, label='Priority: P × revenue value')
-ax.plot(rel.index, rel.with_urgency, color=GREY, lw=1.5, ls='--', label='Priority × urgency (rejected)')
+ax.plot(rel.index, rel.priority, color=GREEN, lw=2.5, marker='o', ms=4, label='Priority (chance now × value)')
+# all rules stop after 5 unanswered calls
+ax.plot(rel.index, rel.with_urgency, color=GREY, lw=1.5, ls='--', label='+ move-in urgency (rejected)')
+ax.plot(rel.index, rel.new_first, color=BLUE, lw=1, ls='-.', label='New leads first')
 ax.set_xlabel('Expert calls per day (about 92 leads arrive daily)'); ax.set_ylabel('Revenue vs standard, %')
-ax.set_title('The tighter the team, the more the ranking rule matters', loc='left', fontweight='bold'); ax.legend(frameon=False)
+ax.set_title('The busier the team, the bigger the gain', loc='left', fontweight='bold'); ax.legend(frameon=False)
 plt.tight_layout(); plt.savefig('charts/simulation.png'); plt.show()
-display(rel.round(1).T)""")
+display(rel.round(1).T)
+k = caps.index(25); print('Bookings at 25 calls/day:', {r: round(cur[r][k][1]) for r in cur})
+print('Where the gain comes from:', {r: f"{v[0] / PIPE['parts']['standard'][0] - 1:+.1%}" for r, v in PIPE['parts'].items()})""")
 
-md("""**So what for University Living:** value-based ranking adds **+19%** revenue when the team is very stretched (10 calls a day) and **+5.0%** at 25,
-then converges with standard scoring once capacity is plentiful. The gain is largest in **peak season (July–September)**, when leads spike.
-Both scoring rules beat arrival order by 30–57%.
+md("""**So what for University Living:** see the table: priority earns more revenue than standard scoring at every team size, with more
+bookings, because it spends calls on fresh, valuable leads instead of stale ones. The gain is largest when the team is most stretched,
+as in **peak season (July–September)**.
 
 ## 7. Routing: match the channel's cost to the lead's value
 | | Lower value | Higher value |
 |---|---|---|
-| **Likely to book** | Close cheaply: AI voice agent with a booking link | Protect: senior expert within 5 min |
-| **Less likely** | Nurture: WhatsApp / email, re-scored on activity | Persuade: expert consultative call |
+| **Likely to book now** | Close cheaply: AI voice agent with a booking link | Protect: senior expert within 5 min |
+| **Less likely now** | Nurture: WhatsApp / email, re-scored on activity | Persuade: expert consultative call |
 
+A lead that stays open slides from Protect towards Nurture as its chance now fades; after 5 unanswered calls it moves to nurture.
+The 5-minute deadline follows the MIT/InsideSales finding that leads contacted within 5 minutes are ~21x more likely to qualify than at 30.
 Consent is a rule, not a feature: a student who opted out of calls is never phoned.
 
 ## 8. Continuous re-scoring
-Leads keep arriving, and they keep changing after they arrive. The engine re-scores a lead on every new action.""")
+Leads keep changing after they arrive. The engine re-scores a lead on every new action.""")
 
-code("""cold = day[(day.p_book < 0.25) & (day.minutes_browsing > 0)]
+code("""cold = day[(day.p_now < 0.25) & (day.minutes_browsing > 0)]
 rows = []
 for _, l in cold.head(4).iterrows():
     r = eng.rescore(l.to_dict(), extra_minutes=15, extra_visits=1)
-    rows.append({'lead_id': l.lead_id, 'P before': f"{r['p_before']:.0%}", 'P after': f"{r['p_after']:.0%}",
+    rows.append({'lead_id': l.lead_id, 'stage': l.stage, 'chance now before': f"{r['p_before']:.0%}", 'after': f"{r['p_after']:.0%}",
                  'play before': r['play_before'], 'play after': r['play_after'], 'respond within': r['sla_after']})
 print('A cold lead returns and browses 15 more minutes:'); display(pd.DataFrame(rows))""")
 
-md("""## 9. Stress tests
-### Can the model improve?""")
+md("""## 9. Stress tests""")
 
 code("""display(pd.DataFrame(X['models']).set_index('name'))
 f = X['form_answers']
 print(f"Adding the enquiry form's answers: AUC {f['without']['auc']} -> {f['with']['auc']}, "
       f"top-20% precision {f['without']['top20_precision']:.1%} -> {f['with']['top20_precision']:.1%}")
 display(pd.DataFrame(X['ablations']).set_index('name'))
-print('Priority gain at 25 calls/day with more revenue counted per student (extras):')
-display(pd.DataFrame(X['extras']).assign(gain=lambda d: (d.gain * 100).round(1).astype(str) + '%').set_index('extras_inr').T)
-print('Priority gain at 25 calls/day when the lead-loss assumption changes:')
-display(pd.DataFrame(X['sensitivity']).assign(gain=lambda d: (d.gain * 100).round(1).astype(str) + '%').set_index('loss_multiplier').T)""")
+print('Priority gain over standard at 25 calls/day, 60-day test:')
+display(pd.DataFrame(PIPE['robust']).assign(gain=lambda d: (d.gain * 100).round(1).astype(str) + '%').set_index('name').T)
+print('Students behave differently from the data the rule learned from (priority vs precise call fatigue):')
+display(pd.DataFrame(PIPE['mismatch']).set_index('name').map(lambda g: f'{g * 100:+.1f}%'))
+print('Rejected ideas:', {k: f'{v * 100:+.1f}%' for k, v in PIPE['rejected'].items()})""")
+
+md("""### The biggest assumption, tested: price sensitivity
+Each lead's property is simulated independently of whether they booked. If students enquiring about expensive rooms book less often,
+part of the value gain disappears. `workflow/breakeven.py` makes high-value enquirers book less often and re-runs the 60-day test.""")
+
+code("""be = pd.DataFrame(PIPE['breakeven']['rows'])
+be['gain'] = (be.gain * 100).round(1).astype(str) + '%'
+display(be.rename(columns={'drop': 'high-value book this much less often', 'gain': 'Lead Desk vs standard',
+                           'high_rate': 'high-value booking rate', 'low_rate': 'other booking rate'}).set_index('high-value book this much less often'))
+print(f"Break-even: Lead Desk keeps winning unless expensive-room enquirers book about {PIPE['breakeven']['breakeven_drop']:.0%} less often.")
+print(f"Pilot size: a 50/50 test at ~{PIPE['pilot']['leads_per_day']} leads a day needs about {PIPE['pilot']['days']} days of leads (95% confidence, 80% power, conservative).")""")
 
 md("""**What this says**
-- **No algorithm beats the current model.** Random forest ties it and the others are lower. The limit is the data, so the model stays simple.
-- **The biggest gain is a product change.** Form answers lift top-20% precision from about 85% to 88%. X Education's own form fields don't map to University Living,
-  but the lesson does: add three qualifying questions to the enquiry form (*offer letter / CAS? which intake? weekly budget?*).
+- **No algorithm beats the booking model.** Random forest ties it and the others are lower. The limit is the data, so the model stays simple.
+- **The biggest model gain is a product change.** Form answers lift top-20% precision from about 85% to 88%. X Education's own form fields don't map to
+  University Living, but the lesson does: add three qualifying questions to the enquiry form (*offer letter / CAS? which intake? weekly budget?*).
 - **Browsing behaviour carries most of the weight** (AUC 0.86 → 0.76 without it). **Risk:** the dataset doesn't say when browsing time was measured.
-  If it includes visits after the sales call, part of it is leakage. In production, count browsing up to the enquiry, then re-score as more arrives.
-- **The priority result is robust:** +4.9% to +5.3% whether uncalled leads are lost 4x slower or 4x faster than assumed.
-  Counting per-student extras narrows the gain (+6.5% with none, +4.0% with ₹30,000) but never removes it.
+  In production, count browsing up to the enquiry, then re-score as more arrives.
+- **The priority result holds in every scenario tried:** peak season, faster follow-ups, different follow-up spacing, no or doubled extras,
+  and worlds where students need more or fewer calls, or stay interested longer or shorter, than the data the rule learned from.
 
-## 10. Limitations and next steps
+""")
+md("""## 10. Limitations and next steps
 **Limitations**
 - Proxy data: real lead behaviour from an Indian education funnel, not University Living's CRM. The method transfers; the numbers would be re-learned.
-- Simulated enquiry context (city, room, tenancy, move-in) and simulated lead loss.
+- Simulated enquiry context (city, room, tenancy, move-in), and simulated call histories for ongoing leads (drawn from real bank and Olist patterns).
+- The fade curve and the 5-call limit come from other businesses (a marketplace, a bank). The test checks the rule still wins when students behave differently.
+- Leads below the expert line count as not called in the test, though the AI agent and WhatsApp would reach some, so the gain is conservative.
 - "Converted" is one step. For University Living, revenue is certain only at move-in (No Visa, No Pay).
 
 **Next steps on real data**
 1. Replace the simulated property fields with real enquiry data, and the assumed commission rate with real partner rates.
-2. Train on **move-in**, not booking, and add a visa-refusal / cancellation risk score.
+2. Train on **move-in**, not booking, and learn University Living's own fade curve and best call limit from its CRM history.
 3. Add the three qualifying questions to the enquiry form and measure the lift.
 4. Partner scorecards: booking rate and commission per counsellor or university partner.
 5. Prove it with an A/B test: priority-routed leads vs the current process, measured in commission per expert-hour, especially during peak season.""")

@@ -52,45 +52,5 @@
    "auc": 0.641,
    "top20_precision": 0.588
   }
- ],
- "sensitivity": [
-  {
-   "loss_multiplier": 0.25,
-   "gain": 0.0492
-  },
-  {
-   "loss_multiplier": 0.5,
-   "gain": 0.0504
-  },
-  {
-   "loss_multiplier": 1,
-   "gain": 0.0502
-  },
-  {
-   "loss_multiplier": 2,
-   "gain": 0.0531
-  },
-  {
-   "loss_multiplier": 4,
-   "gain": 0.0485
-  }
- ],
- "extras": [
-  {
-   "extras_inr": 0,
-   "gain": 0.0653
-  },
-  {
-   "extras_inr": 7500,
-   "gain": 0.0573
-  },
-  {
-   "extras_inr": 15000,
-   "gain": 0.0502
-  },
-  {
-   "extras_inr": 30000,
-   "gain": 0.0396
-  }
  ]
 }

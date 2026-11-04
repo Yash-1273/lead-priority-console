@@ -12,3 +12,7 @@ __pycache__/
 # Not used by the current project (rejected rent sample, retired first report)
 data/uk_rent_listings.csv
 data/results.json
+
+# Personal interview prep (kept local)
+Presentation_Script.md
+deck_prompt.md

@@ -1,147 +1,174 @@
-<title>Lead Priority Console</title>
+<title>Lead Desk</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
-/* Layout: an operations console. Thesis + live controls on top, today's queue as the centre of gravity with a lead-detail rail, evidence and a live scorer below. */
+/* Layout: one focused column. Header with three numbers; today's routing (switch + one split bar); one call list with tabs
+   and live events; a lead file that slides in on click; then the season race, proof, a live scorer and the data notes. */
 :root{
-  --bg:#f4f7f6; --surface:#ffffff; --sunk:#eaf0ee; --ink:#0f1c1a; --ink-2:#3d4c49; --muted:#6f7e7a; --rule:#d7e0dd;
-  --accent:#0b6e5f; --accent-soft:#dcefe9; --on-accent:#ffffff;
-  --protect:#c2410c; --persuade:#6a48c2; --close:#a86d10; --nurture:#5b6b80; --good:#13795b; --bad:#b4372f;
+  --bg:#f3f6f5; --surface:#ffffff; --sunk:#e9efed; --ink:#0f1c1a; --ink-2:#3d4c49; --muted:#6f7e7a; --rule:#d7e0dd;
+  --accent:#0b6e5f; --accent-soft:#dcefe9; --on-accent:#ffffff; --scrim:rgb(10 20 18 / .35);
+  --expert:#c2410c; --ai:#a86d10; --nurture:#5b6b80; --persuade:#6a48c2; --good:#13795b; --bad:#b4372f;
   --display:"Familjen Grotesk","Segoe UI",system-ui,sans-serif; --body:"IBM Plex Sans","Segoe UI",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#0c1312; --surface:#131c1a; --sunk:#0f1716; --ink:#e6eeec; --ink-2:#b2c0bc; --muted:#7f8f8b; --rule:#24312e;
-  --accent:#3cc0a3; --accent-soft:#143029; --on-accent:#06201a;
-  --protect:#f08a5d; --persuade:#a68df2; --close:#e2b252; --nurture:#98a8bd; --good:#4cc79a; --bad:#f07a70; color-scheme:dark}}
+  --accent:#3cc0a3; --accent-soft:#143029; --on-accent:#06201a; --scrim:rgb(0 0 0 / .55);
+  --expert:#f08a5d; --ai:#e2b252; --nurture:#98a8bd; --persuade:#a68df2; --good:#4cc79a; --bad:#f07a70; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0c1312; --surface:#131c1a; --sunk:#0f1716; --ink:#e6eeec; --ink-2:#b2c0bc; --muted:#7f8f8b; --rule:#24312e;
-  --accent:#3cc0a3; --accent-soft:#143029; --on-accent:#06201a;
-  --protect:#f08a5d; --persuade:#a68df2; --close:#e2b252; --nurture:#98a8bd; --good:#4cc79a; --bad:#f07a70; color-scheme:dark}
+  --accent:#3cc0a3; --accent-soft:#143029; --on-accent:#06201a; --scrim:rgb(0 0 0 / .55);
+  --expert:#f08a5d; --ai:#e2b252; --nurture:#98a8bd; --persuade:#a68df2; --good:#4cc79a; --bad:#f07a70; color-scheme:dark}
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--body);padding-inline:16px;padding-block:0}
-.page{max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:28px;padding-block:20px 64px}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--body);padding-inline:16px;padding-block:0}
+.page{max-width:1120px;margin:0 auto;display:flex;flex-direction:column;gap:24px;padding-block:18px 64px}
 .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
-.label{font:500 11px/1.2 var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.label{font:500 11px/1.25 var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
 h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0}
-h1{font-size:clamp(30px,4.4vw,48px);line-height:1.05;letter-spacing:-.02em;font-weight:700;max-width:22ch}
-h2{font-size:24px;line-height:1.15;font-weight:700;letter-spacing:-.01em}
-h3{font-size:17px;font-weight:600}
-p{margin:0;color:var(--ink-2);max-width:68ch}
+h1{font-size:clamp(24px,3.2vw,32px);line-height:1.1;font-weight:700;letter-spacing:-.015em}
+h2{font-size:22px;line-height:1.15;font-weight:700;letter-spacing:-.01em}
+h3{font-size:16px;font-weight:600}
+p{margin:0;color:var(--ink-2);max-width:72ch}
 p strong{color:var(--ink)}
 button,input,select{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-
-/* top bar */
-.topbar{display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between;border-bottom:1px solid var(--rule);padding-bottom:14px}
-.brand{display:flex;align-items:center;gap:10px;font:700 16px/1 var(--display)}
-.brand i{width:22px;height:22px;border-radius:5px;background:var(--accent);display:inline-grid;place-items:center;color:var(--on-accent);font:700 12px/1 var(--mono);font-style:normal}
-.meta{display:flex;flex-wrap:wrap;gap:8px}
-.chip{font:500 12px/1 var(--mono);color:var(--ink-2);background:var(--surface);border:1px solid var(--rule);border-radius:99px;padding:6px 10px}
-
-/* thesis */
-.thesis{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:32px;align-items:end}
-.thesis > div{display:flex;flex-direction:column;gap:14px;min-width:0}
-.kicker{font:500 18px/1.4 var(--body);color:var(--ink);max-width:52ch}
-.formula{display:flex;flex-wrap:wrap;align-items:stretch;gap:8px;font-family:var(--mono)}
-.term{background:var(--surface);border:1px solid var(--rule);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:4px;min-width:0}
-.term b{font:600 15px/1.2 var(--mono);color:var(--ink)}
-.term span{font-size:12px;color:var(--muted)}
-.term.out{background:var(--accent);border-color:var(--accent)}
-.term.out b,.term.out span{color:var(--on-accent)}
-.op{align-self:center;color:var(--muted);font-size:18px}
-.formula-note{font-size:13px;color:var(--muted)}
-
-/* controls */
-.controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-areas:'rule rule reveal' 'k rate extras';gap:14px 24px;align-items:end;background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:16px}
-.a-rule{grid-area:rule}.a-k{grid-area:k}.a-rate{grid-area:rate}.a-extras{grid-area:extras}.a-reveal{grid-area:reveal;justify-self:end}
-.ctrl{display:flex;flex-direction:column;gap:8px;min-width:0}
-.seg{align-self:flex-start;display:inline-flex;background:var(--sunk);border:1px solid var(--rule);border-radius:8px;padding:3px;gap:2px;flex-wrap:wrap}
-.seg button{border:0;background:transparent;border-radius:6px;padding:8px 12px;font-weight:500;font-size:14px;color:var(--ink-2);cursor:pointer}
+.panel{background:var(--surface);border:1px solid var(--rule);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:16px;min-width:0}
+.btn{border:1px solid var(--rule);background:var(--surface);border-radius:8px;padding:8px 13px;font-size:13.5px;font-weight:500;cursor:pointer}
+.btn:hover{border-color:var(--accent)} .btn:disabled{opacity:.5;cursor:default}
+.btn.primary{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.btn.ghost{background:transparent;color:var(--muted);border-color:transparent}
+.seg{display:inline-flex;background:var(--sunk);border:1px solid var(--rule);border-radius:9px;padding:3px;gap:2px;flex-wrap:wrap}
+.seg button{border:0;background:transparent;border-radius:7px;padding:8px 14px;font-weight:500;font-size:14px;color:var(--ink-2);cursor:pointer}
 .seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgb(0 0 0 / .12)}
-.seg button[aria-pressed="true"][data-rule="priority"]{background:var(--accent);color:var(--on-accent)}
+.seg button[aria-pressed="true"].ours{background:var(--accent);color:var(--on-accent)}
+.seg.small button{padding:6px 11px;font-size:13px}
 .slider-row{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
-.slider-row b{font:600 14px/1 var(--mono)}
+.slider-row b{font:600 13.5px/1 var(--mono)}
 input[type=range]{width:100%;accent-color:var(--accent)}
-.toggle{display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px;font-weight:500;border:1px solid var(--rule);border-radius:8px;padding:8px 12px;background:var(--sunk)}
+.toggle{display:inline-flex;align-items:center;gap:9px;cursor:pointer;font-size:13.5px;font-weight:500;border:1px solid var(--rule);border-radius:8px;padding:8px 12px;background:var(--surface);white-space:nowrap}
 .toggle input{accent-color:var(--accent);width:16px;height:16px}
-
-/* kpis */
-.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
-.kpi{border-top:2px solid var(--rule);padding-top:10px;display:flex;flex-direction:column;gap:4px;min-width:0}
-.kpi b{font:600 28px/1.1 var(--mono);font-variant-numeric:tabular-nums}
-.kpi small{font-size:13px;color:var(--muted)}
-.kpi .delta{font:500 13px/1.2 var(--mono)}
 .up{color:var(--good)} .down{color:var(--bad)}
-.kpi.real{border-top-color:var(--accent)}
 
-/* compare callout */
-.versus{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:12px;align-items:stretch}
-.vcard{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;min-width:0;cursor:pointer;text-align:left}
-.vcard:hover{border-color:var(--accent)}
-.vcard .row{display:flex;justify-content:space-between;gap:8px;font-size:14px;color:var(--ink-2)}
-.vcard .row b{color:var(--ink)}
-.vcard .verdict{font-size:13px;border-top:1px solid var(--rule);padding-top:8px;color:var(--ink)}
-.vs{align-self:center;font:700 14px/1 var(--display);color:var(--muted)}
+/* header */
+.head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px 24px;align-items:end}
+.brand{display:flex;gap:12px;align-items:flex-start}
+.brand i{flex:none;width:30px;height:30px;border-radius:7px;background:var(--accent);display:grid;place-items:center;color:var(--on-accent);font:700 12px/1 var(--mono);font-style:normal;margin-top:3px}
+.brand p{font-size:14px;margin-top:6px}
+.chip{font:500 12px/1 var(--mono);color:var(--ink-2);border:1px solid var(--rule);border-radius:99px;padding:6px 10px;white-space:nowrap}
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.kpi{background:var(--surface);border:1px solid var(--rule);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.kpi b{font:600 28px/1.1 var(--mono);font-variant-numeric:tabular-nums}
+.kpi small{font-size:13px;color:var(--ink-2)}
+.kpi.hero{border-color:var(--accent);background:var(--accent-soft)}
+.kpi.hero b{color:var(--accent)}
 
-/* main grid */
-.main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;align-items:start}
-.queue{background:var(--surface);border:1px solid var(--rule);border-radius:10px;overflow:hidden;min-width:0}
-.qhead{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:14px 16px;border-bottom:1px solid var(--rule);flex-wrap:wrap}
-.qscroll{overflow:auto;max-height:640px}
-table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:820px}
-thead th{white-space:nowrap;position:sticky;top:0;background:var(--surface);z-index:1;text-align:left;font:500 11px/1.2 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:9px 10px;border-bottom:1px solid var(--rule)}
-td{padding:8px 10px;border-bottom:1px solid var(--rule);vertical-align:middle;white-space:nowrap}
-th.r,td.r{text-align:right}
-tbody tr{cursor:pointer;background:var(--surface)}
-tbody tr:hover{background:var(--sunk)}
-tbody tr.sel{background:var(--accent-soft)}
-tbody tr.wait td{color:var(--muted)}
-tbody tr.wait td .lead b{color:var(--ink-2)}
-tr.cut td{background:var(--sunk);font:500 11px/1.3 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);text-align:center;padding:7px;border-top:2px solid var(--accent);cursor:default}
-.lead{display:flex;flex-direction:column;line-height:1.25}
-.lead b{font-weight:600;font-size:13.5px}
-.lead span{font-size:12px;color:var(--muted)}
-.rank{font:600 13px/1 var(--mono);display:flex;align-items:center;gap:6px}
-.mv{font:500 11px/1 var(--mono)}
-.pbar{display:flex;align-items:center;gap:8px}
-.pbar i{display:block;height:6px;border-radius:3px;background:var(--sunk);width:56px;position:relative;overflow:hidden}
-.pbar i::after{content:"";position:absolute;inset:0 auto 0 0;width:var(--w);background:var(--ink-2);border-radius:3px}
-.play{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:500}
-.play::before{content:"";width:8px;height:8px;border-radius:2px;background:var(--c)}
-.due{font:500 12px/1 var(--mono);padding:4px 6px;border-radius:4px;background:var(--sunk);color:var(--ink-2)}
-.due.hotdue{background:var(--protect);color:var(--surface)}
-.out-yes{color:var(--good);font-weight:600} .out-no{color:var(--muted)}
+/* routing */
+.routehead{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:12px 20px}
+.capbox{display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:14px 22px;align-items:end}
+.ctrl{display:flex;flex-direction:column;gap:7px;min-width:0}
+.split{display:flex;height:58px;border-radius:10px;overflow:hidden;gap:3px;background:var(--surface)}
+.split button{border:0;display:flex;flex-direction:column;justify-content:center;gap:2px;padding:0 12px;min-width:0;cursor:pointer;color:var(--surface);background:var(--c);text-align:left;transition:flex-grow .5s cubic-bezier(.2,.7,.2,1)}
+.split button b{font:600 15px/1.1 var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.split button span{font:500 11.5px/1.2 var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.9}
+.split button[aria-pressed="true"]{box-shadow:inset 0 -4px 0 var(--ink)}
+.splitkey{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.splitkey div{display:flex;flex-direction:column;gap:2px;border-left:3px solid var(--c);padding-left:10px;min-width:0}
+.splitkey b{font-size:14px} .splitkey span{font-size:12.5px;color:var(--ink-2)}
+.verdict{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:baseline;font-size:14px;color:var(--ink-2);border-top:1px solid var(--rule);padding-top:12px}
+.verdict b{font:600 16px/1.2 var(--mono);color:var(--ink)}
 
-/* detail rail */
-.rail{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px);background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:14px;min-width:0}
-.rail .calc{display:grid;grid-template-columns:1fr auto;gap:6px 12px;font-size:14px;background:var(--sunk);border-radius:8px;padding:12px}
-.rail .calc span{color:var(--ink-2)}
-.rail .calc b{font:600 14px/1.3 var(--mono);text-align:right}
-.rail .calc .tot{border-top:1px solid var(--rule);padding-top:6px;color:var(--ink);font-weight:600}
-.rail .calc .tot + b{border-top:1px solid var(--rule);padding-top:6px;color:var(--accent)}
+/* list */
+.listhead{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px 16px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--rule);flex-wrap:wrap}
+.tabs button{border:0;background:transparent;padding:10px 14px;font-size:14px;font-weight:500;color:var(--ink-2);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-1px;display:flex;gap:8px;align-items:center}
+.tabs button .num{font-size:12.5px;background:var(--sunk);border-radius:99px;padding:2px 8px}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--c)}
+.tabs button[aria-selected="true"] .num{background:var(--c);color:var(--surface)}
+.log{font-size:13px;color:var(--ink-2);background:var(--sunk);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:3px}
+.log b{color:var(--ink)}
+.rows{display:flex;flex-direction:column}
+.row{display:grid;grid-template-columns:42px minmax(0,1.6fr) minmax(0,1fr) 76px 110px 96px;gap:10px;align-items:center;padding:10px 8px;border-bottom:1px solid var(--rule);cursor:pointer;background:transparent;border-left:0;border-right:0;border-top:0;text-align:left;width:100%}
+.row:hover{background:var(--sunk)}
+.row.sel{background:var(--accent-soft)}
+.row.callback{cursor:default;background:var(--sunk)}
+.row .rk{font:600 12.5px/1 var(--mono);color:var(--muted)}
+.row .who b{display:block;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .who span{display:block;font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .tags{display:flex;flex-wrap:wrap;gap:4px}
+.row .ch{font:500 13px/1.2 var(--mono)} .row .ch small{display:block;color:var(--muted);font-size:11px}
+.row .pri{font:600 14px/1.2 var(--mono);text-align:right} .row .pri small{display:block;font:500 11px/1.2 var(--mono);color:var(--muted)}
+.row .due{justify-self:end}
+.colhead{display:grid;grid-template-columns:42px minmax(0,1.6fr) minmax(0,1fr) 76px 110px 96px;gap:10px;padding:8px 8px;border-bottom:1px solid var(--rule)}
+.colhead span{font:500 10.5px/1.2 var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.colhead .r,.row .r{text-align:right}
+.tag{font:600 10.5px/1 var(--mono);text-transform:uppercase;letter-spacing:.04em;padding:4px 6px;border-radius:4px;background:var(--sunk);color:var(--ink-2);white-space:nowrap}
+.tag.new{background:var(--accent-soft);color:var(--accent)}
+.tag.fu{background:color-mix(in srgb,var(--persuade) 16%,transparent);color:var(--persuade)}
+.tag.sla{background:var(--expert);color:var(--surface)}
+.tag.gone{background:color-mix(in srgb,var(--ai) 20%,transparent);color:var(--ai)}
+.tag.yes{background:color-mix(in srgb,var(--good) 18%,transparent);color:var(--good)}
+.more{font:500 12.5px/1.4 var(--mono);color:var(--muted);text-align:center;padding:10px}
+@keyframes arrive{from{background:var(--accent-soft)}to{background:transparent}}
+.row.flash{animation:arrive 2s ease-out}
+
+/* lead file (slide-in) */
+.scrim{position:fixed;inset:0;background:var(--scrim);z-index:20}
+.file{position:fixed;top:0;right:0;bottom:0;width:min(420px,100%);background:var(--surface);border-left:1px solid var(--rule);z-index:21;overflow:auto;
+  padding:calc(env(safe-area-inset-top,0px) + 18px) 20px calc(env(safe-area-inset-bottom,0px) + 24px);display:flex;flex-direction:column;gap:14px;
+  transform:translateX(0);transition:transform .25s ease}
+.file[hidden]{display:flex!important;transform:translateX(105%);visibility:hidden}
+.filetop{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.close{border:1px solid var(--rule);background:var(--surface);border-radius:8px;width:34px;height:34px;cursor:pointer;font-size:16px;flex:none}
+.calc{display:grid;grid-template-columns:1fr auto;gap:6px 12px;font-size:13.5px;background:var(--sunk);border-radius:8px;padding:12px}
+.calc span{color:var(--ink-2)} .calc b{font:600 13.5px/1.3 var(--mono);text-align:right}
+.calc .tot{border-top:1px solid var(--rule);padding-top:6px;color:var(--ink);font-weight:600}
+.calc .tot + b{border-top:1px solid var(--rule);padding-top:6px;color:var(--accent)}
 .route{border-left:3px solid var(--c);padding-left:12px;display:flex;flex-direction:column;gap:2px}
-.route b{font-size:15px}
-.route span{font-size:13.5px;color:var(--ink-2)}
+.route b{font-size:15px} .route span{font-size:13.5px;color:var(--ink-2)}
 .reasons{margin:0;padding-left:18px;font-size:13.5px;color:var(--ink-2);display:flex;flex-direction:column;gap:4px}
-.ranks{display:flex;gap:10px;font-size:13px;color:var(--ink-2);flex-wrap:wrap}
-.ranks span{background:var(--sunk);border-radius:6px;padding:6px 8px}
+.dbtns{display:flex;flex-wrap:wrap;gap:6px}
+.change{background:var(--accent-soft);border-radius:8px;padding:10px 12px;font-size:13.5px;display:flex;flex-direction:column;gap:3px}
+.change b{font:600 13.5px/1.3 var(--mono)}
 
-/* sections below */
-.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:20px}
-.panel{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
-.matrix{display:grid;grid-template-columns:auto 1fr 1fr;grid-template-rows:auto 1fr 1fr;gap:8px}
-.matrix .ax{font:500 11px/1.2 var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;justify-content:center}
-.matrix .ay{writing-mode:vertical-rl;transform:rotate(180deg)}
-.cell{border:1px solid var(--rule);border-top:3px solid var(--c);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:4px;min-width:0}
-.cell b{font:600 15px/1.2 var(--display)}
-.cell .num{font-size:22px;font-weight:600;color:var(--ink)}
-.cell span{font-size:12.5px;color:var(--ink-2)}
+/* race */
+.race{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:20px;align-items:start}
+.racectl{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:end}
 .chartbox{position:relative}
 .chartbox svg{display:block;width:100%;height:auto;overflow:visible}
-.legend{display:flex;flex-wrap:wrap;gap:16px;font-size:13px;color:var(--ink-2)}
-.legend i{display:inline-block;width:18px;border-top:2px solid;vertical-align:middle;margin-right:6px}
-.tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);font:12px/1.45 var(--mono);padding:6px 8px;border-radius:5px;white-space:nowrap;z-index:2}
+.runners{display:flex;flex-direction:column;gap:10px}
+.runner{border:1px solid var(--rule);border-left:4px solid var(--c);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.runner span{font-size:13px;color:var(--ink-2)} .runner b{font:600 20px/1.2 var(--mono)} .runner small{font:500 12px/1.3 var(--mono);color:var(--muted)}
+.daytag{font:600 13px/1 var(--mono);color:var(--accent)}
 
+/* proof */
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.tile{border-top:2px solid var(--accent);padding-top:10px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.tile b{font:700 28px/1.1 var(--mono)} .tile span{font-size:13px;color:var(--ink-2)}
+.assume{display:grid;grid-template-columns:repeat(2,minmax(0,1fr)) minmax(0,1.4fr);gap:14px 22px;align-items:end;background:var(--sunk);border-radius:10px;padding:14px}
+details.fold{background:var(--surface);border:1px solid var(--rule);border-radius:12px}
+details.fold summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px 20px;flex-wrap:wrap}
+details.fold summary::-webkit-details-marker{display:none}
+details.fold summary .open{font:500 13px/1 var(--mono);color:var(--accent);border:1px solid var(--accent);border-radius:6px;padding:8px 11px}
+details.fold[open] summary .open{color:var(--muted);border-color:var(--rule)}
+.foldbody{display:flex;flex-direction:column;gap:14px;padding:0 20px 20px}
+.three{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.sub-panel{background:var(--sunk);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.mini{width:100%;border-collapse:collapse;font-size:13px}
+.mini td,.mini th{padding:6px 5px;border-bottom:1px solid var(--rule);text-align:left}
+.mini th{font:500 10.5px/1.2 var(--mono);text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.mini .r{text-align:right} .mini tr.best td{font-weight:600}
+.bars{display:flex;flex-direction:column;gap:8px}
+.bar{display:grid;grid-template-columns:minmax(0,1fr) 50px;gap:4px 10px;align-items:center;font-size:12.5px;color:var(--ink-2)}
+.bar i{grid-column:1/-1;height:7px;border-radius:4px;background:var(--surface);position:relative;overflow:hidden}
+.bar i::after{content:"";position:absolute;inset:0 auto 0 0;width:var(--w);background:var(--c,var(--accent));border-radius:4px}
+.bar b{font:600 12.5px/1 var(--mono);text-align:right;color:var(--ink)}
+.sens{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.sens div{background:var(--surface);border-radius:8px;padding:9px;display:flex;flex-direction:column;gap:2px;text-align:center}
+.sens b{font:600 16px/1.2 var(--mono);color:var(--good)}
+.risk{border-left:3px solid var(--ai);padding:2px 0 2px 12px;font-size:13px;color:var(--ink-2)}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12.5px;color:var(--ink-2)}
+.legend i{display:inline-block;width:18px;border-top:2px solid;vertical-align:middle;margin-right:6px}
+
+/* scorer */
 .scorer{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:20px}
 .form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 16px}
 .f{display:flex;flex-direction:column;gap:6px;min-width:0}
@@ -150,198 +177,176 @@ tr.cut td{background:var(--sunk);font:500 11px/1.3 var(--mono);letter-spacing:.0
 select{background:var(--sunk);border:1px solid var(--rule);border-radius:6px;padding:8px;width:100%}
 .check{flex-direction:row;align-items:center;gap:8px;font-size:13px;color:var(--ink-2)}
 .check input{accent-color:var(--accent)}
-.result{background:var(--sunk);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.result{background:var(--sunk);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
 .result .big{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
-.result .big b{font:700 40px/1 var(--mono);color:var(--accent)}
-.result .grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-.result .grid3 div{display:flex;flex-direction:column;gap:2px}
-.result .grid3 b{font:600 17px/1.2 var(--mono)}
-
-.steps{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;counter-reset:s}
-.step{border-top:2px solid var(--ink);padding-top:10px;display:flex;flex-direction:column;gap:4px;min-width:0}
-.step::before{counter-increment:s;content:counter(s,decimal-leading-zero);font:500 12px/1 var(--mono);color:var(--muted)}
-.step b{font-size:14.5px}
-.step span{font-size:13px;color:var(--ink-2)}
-.honesty{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.result .big b{font:700 34px/1 var(--mono);color:var(--accent)}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.grid3 div{display:flex;flex-direction:column;gap:2px} .grid3 b{font:600 16px/1.2 var(--mono)}
+.honesty{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
 .hcol{display:flex;flex-direction:column;gap:8px;min-width:0}
-.hcol ul{margin:0;padding-left:18px;font-size:13.5px;color:var(--ink-2);display:flex;flex-direction:column;gap:5px}
+.hcol ul{margin:0;padding-left:18px;font-size:13px;color:var(--ink-2);display:flex;flex-direction:column;gap:5px}
 .pill{align-self:flex-start;font:600 11px/1 var(--mono);text-transform:uppercase;letter-spacing:.06em;padding:5px 8px;border-radius:4px;background:var(--c);color:var(--surface)}
-.events{display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--rule);padding-top:12px}
-.events .btns{display:flex;flex-wrap:wrap;gap:6px}
-.ev{border:1px solid var(--rule);background:var(--sunk);border-radius:6px;padding:7px 10px;font-size:13px;font-weight:500;cursor:pointer;text-align:left}
-.ev:hover{border-color:var(--accent)}
-.ev.reset{background:transparent;color:var(--muted)}
-.change{background:var(--accent-soft);border-radius:8px;padding:10px 12px;font-size:13.5px;display:flex;flex-direction:column;gap:4px}
-.change b{font:600 14px/1.3 var(--mono)}
-.badge{font:600 10px/1 var(--mono);text-transform:uppercase;letter-spacing:.06em;background:var(--accent);color:var(--on-accent);border-radius:3px;padding:3px 5px;margin-left:6px;vertical-align:1px}
-@keyframes flash{from{background:var(--accent-soft)}to{background:var(--surface)}}
-tr.flash{animation:flash 1.6s ease-out}
-.three{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
-.mini{width:100%;min-width:0;font-size:13.5px}
-.mini td,.mini th{padding:7px 6px;white-space:normal}
-.mini tr.best td{font-weight:600;color:var(--ink)}
-.bars{display:flex;flex-direction:column;gap:9px}
-.bar{display:grid;grid-template-columns:minmax(0,1fr) 52px;gap:4px 10px;align-items:center;font-size:13px;color:var(--ink-2)}
-.bar i{grid-column:1/-1;height:8px;border-radius:4px;background:var(--sunk);position:relative;overflow:hidden}
-.bar i::after{content:"";position:absolute;inset:0 auto 0 0;width:var(--w);background:var(--c,var(--accent));border-radius:4px}
-.bar b{font:600 13px/1 var(--mono);text-align:right;color:var(--ink)}
-.lift{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
-.lift b{font:700 30px/1 var(--mono);color:var(--accent)}
-.qs{margin:0;padding-left:18px;font-size:13.5px;color:var(--ink);display:flex;flex-direction:column;gap:5px}
-.sens{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
-.sens div{background:var(--sunk);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:2px;text-align:center}
-.sens b{font:600 17px/1.2 var(--mono);color:var(--good)}
-.risk{border-left:3px solid var(--close);padding:4px 0 4px 12px;font-size:13.5px;color:var(--ink-2)}
-.stress{background:var(--surface);border:1px solid var(--rule);border-radius:10px}
-.stress summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px;flex-wrap:wrap}
-.stress summary::-webkit-details-marker{display:none}
-.stress summary .more{font:500 13px/1 var(--mono);color:var(--accent);border:1px solid var(--accent);border-radius:6px;padding:9px 12px;white-space:nowrap}
-.stress summary .more::after{content:" ↓"}
-.stress[open] summary .more{color:var(--muted);border-color:var(--rule)}
-.stress[open] summary .more::after{content:" ↑"}
-.stress summary:hover .more{background:var(--accent-soft)}
-.stress-body{display:flex;flex-direction:column;gap:14px;padding:0 18px 18px}
-.stress-body .panel{background:var(--sunk);border-color:transparent}
-footer{border-top:1px solid var(--rule);padding-top:16px;font-size:13.5px;color:var(--muted);display:flex;flex-direction:column;gap:6px}
+footer{border-top:1px solid var(--rule);padding-top:14px;font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:6px}
 footer p{color:var(--muted)}
 
-@media (max-width:1000px){.three{grid-template-columns:1fr}.main{grid-template-columns:1fr}.rail{position:static}.thesis,.two,.scorer{grid-template-columns:1fr}.controls{grid-template-columns:1fr 1fr;grid-template-areas:'rule rule' 'k reveal' 'rate extras'}.steps{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media (max-width:640px){.sens{grid-template-columns:repeat(2,minmax(0,1fr))}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.controls{grid-template-columns:1fr;grid-template-areas:'rule' 'reveal' 'k' 'rate' 'extras'}.a-reveal{justify-self:start}.versus{grid-template-columns:1fr}.vs{justify-self:center}.honesty,.form,.steps{grid-template-columns:1fr}.result .grid3{grid-template-columns:1fr 1fr}}
+@keyframes pulse{from{background:var(--accent-soft)}to{background:transparent}}
+.pulse{animation:pulse 1.2s ease-out;border-radius:6px}
+.note{font-size:12.5px;color:var(--ink-2);line-height:1.45}
+.note b{font-family:var(--mono);color:var(--ink)}
+.flow{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.flow div{background:var(--sunk);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:4px;position:relative;min-width:0}
+.flow div b{font-size:14px} .flow div span{font-size:12.5px;color:var(--ink-2)}
+.flow div .label{color:var(--accent)}
+.promise{border:1px solid var(--accent);background:var(--accent-soft);border-radius:10px;padding:12px 14px;font-size:14px;color:var(--ink)}
+.be{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+.be div{background:var(--surface);border-radius:8px;padding:9px;display:flex;flex-direction:column;gap:2px;text-align:center}
+.be b{font:600 16px/1.2 var(--mono)} .be b.pos{color:var(--good)} .be b.neg{color:var(--bad)}
+.fusum{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:baseline;font-size:13.5px;color:var(--ink-2)}
+.fusum b{color:var(--ink)}
+.fusum .dot{display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--c);margin-right:5px;vertical-align:1px}
+.rowsbox{border-left:3px solid var(--c);padding-left:10px}
+.listnote{font-size:13px;color:var(--ink-2);background:var(--sunk);border-left:3px solid var(--c);padding:9px 12px;margin:8px 0 2px;border-radius:0 6px 6px 0}
+@media (max-width:900px){.flow{grid-template-columns:1fr 1fr}.be{grid-template-columns:repeat(3,minmax(0,1fr))}.head,.race,.three,.scorer{grid-template-columns:1fr}.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.assume{grid-template-columns:1fr 1fr}
+  .row,.colhead{grid-template-columns:34px minmax(0,1fr) 100px}.row .tags,.colhead .c-tags,.row .ch,.colhead .c-ch{display:none}.row .due{grid-column:2;justify-self:start}.colhead .c-due{display:none}}
+@media (max-width:640px){.kpis,.splitkey{grid-template-columns:1fr}.capbox,.assume,.honesty,.form{grid-template-columns:1fr}.sens{grid-template-columns:repeat(2,minmax(0,1fr))!important}.split button span{display:none}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 
 <div class="page">
-  <div class="topbar">
-    <div class="brand"><i>LP</i>Lead Priority Console</div>
-    <div class="meta">
-      <span class="chip">Concept for University Living</span>
-      <span class="chip" id="m-auc"></span>
-      <span class="chip">Re-scores on every student action</span>
-      <span class="chip">Runs the real model in your browser</span>
-    </div>
-  </div>
-
-  <section class="thesis">
-    <div>
-      <span class="label">The idea</span>
-      <h1>Rank leads by what they're likely to earn, not just whether they'll book.</h1>
-      <p class="kicker">When experts can't call everyone, the top of the queue should hold the most expected revenue. Every other lead still gets the AI agent or nurture.</p>
-      <p>Standard lead scoring treats a shared room in Leicester and a London studio as the same lead. At University Living they aren't. Commission follows the rent, and the student enquires on a specific property, so <strong>the value of a lead is known the moment it arrives.</strong> Extras like flights, money transfer and guarantor are earned per student, so they count too.</p>
-    </div>
-    <div>
-      <div class="formula" aria-label="Priority equals probability of booking times revenue value">
-        <div class="term"><b>P(book)</b><span>model, real leads</span></div><span class="op">×</span>
-        <div class="term"><b>Revenue value</b><span>commission + extras</span></div><span class="op">=</span>
-        <div class="term out"><b>Priority</b><span>expected ₹ from the lead</span></div>
-      </div>
-      <p class="formula-note">Priority decides <strong>who</strong> gets an expert first. Days to move-in decides <strong>how fast</strong>. A tested urgency multiplier made results worse, so it stays out of the ranking (see the evidence below).</p>
-    </div>
-  </section>
-
-  <section class="panel" aria-label="The workflow">
-    <div><span class="label">The workflow</span><h2>Five steps from enquiry to the right person</h2></div>
-    <div class="steps">
-      <div class="step"><b>Enquiry arrives</b><span>Website, app, SABIE chat, counsellor or bulk upload, with the property attached.</span></div>
-      <div class="step"><b>Arrival-time signals only</b><span>Channel, browsing depth, form completeness, consent. Post-call fields are dropped because they leak the outcome.</span></div>
-      <div class="step"><b>P(book)</b><span>Gradient-boosted model on <span id="h-train"></span> real leads, AUC <span id="h-auc"></span>, calibrated.</span></div>
-      <div class="step"><b>× Revenue value</b><span>Rent commission (rent × weeks × rate) plus per-student extras: flights, money transfer, guarantor.</span></div>
-      <div class="step"><b>Route, re-score, learn</b><span>Play by P × value; deadline by days to move-in. Every new action re-scores the lead. Outcomes flow back; retrain each intake.</span></div>
-    </div>
-  </section>
-
-  <section class="controls" aria-label="Console controls">
-    <div class="ctrl a-rule">
-      <span class="label">Rank today's leads by</span>
-      <div class="seg" role="group" aria-label="Ranking rule">
-        <button type="button" data-rule="arrival" aria-pressed="false">Arrival order</button>
-        <button type="button" data-rule="standard" aria-pressed="false">Standard score</button>
-        <button type="button" data-rule="priority" aria-pressed="true">Priority</button>
-      </div>
-    </div>
-    <div class="ctrl a-k">
-      <div class="slider-row"><span class="label">Expert capacity today</span><b id="k-out"></b></div>
-      <input id="k" type="range" min="5" max="92" step="1" value="25" aria-label="Expert capacity today">
-    </div>
-    <div class="ctrl a-rate">
-      <div class="slider-row"><span class="label">Commission rate (assumed)</span><b id="rate-out"></b></div>
-      <input id="rate" type="range" min="5" max="15" step="1" value="10" aria-label="Commission rate">
-    </div>
-    <div class="ctrl a-extras">
-      <div class="slider-row"><span class="label">Extras per booking (assumed)</span><b id="extras-out"></b></div>
-      <input id="extras" type="range" min="0" max="50000" step="2500" value="15000" aria-label="Extras per booking in rupees">
-    </div>
-    <label class="toggle a-reveal"><input id="reveal" type="checkbox"> Reveal real outcomes</label>
-  </section>
+  <header class="head">
+    <div class="brand"><i>LD</i><div><h1>Lead Desk</h1><p>Every lead, new or follow-up, ranked by what it's likely to earn, and sent to the right person. A working concept for University Living.</p></div></div>
+    <span class="chip" id="m-auc"></span>
+  </header>
 
   <section class="kpis" aria-live="polite">
-    <div class="kpi"><span class="label">Leads called</span><b id="kp-called"></b><small id="kp-called-s"></small></div>
-    <div class="kpi"><span class="label">Expected bookings</span><b id="kp-book"></b><span class="delta" id="kp-book-d"></span></div>
-    <div class="kpi"><span class="label">Expected revenue</span><b id="kp-com"></b><span class="delta" id="kp-com-d"></span></div>
-    <div class="kpi real"><span class="label" id="kp-real-l">What really happened</span><b id="kp-real"></b><span class="delta" id="kp-real-d"></span></div>
+    <div class="kpi"><span class="label">Leads today</span><b id="k-leads"></b><small id="k-leads-s"></small></div>
+    <div class="kpi"><span class="label">Expert calls today</span><b id="k-cap"></b><small id="k-cap-s"></small></div>
+    <div class="kpi hero"><span class="label" id="k-gain-l">Measured gain vs standard scoring</span><b id="k-gain"></b><small id="k-gain-s"></small></div>
   </section>
 
-  <section style="display:flex;flex-direction:column;gap:12px">
-    <div><span class="label">The decision in one comparison</span><h2 style="margin-top:6px" id="vs-title">A likely booker can be the wrong call</h2></div>
-    <div class="versus" id="versus"></div>
-  </section>
-
-  <section class="main">
-    <div class="queue">
-      <div class="qhead"><h3 id="q-title">Today's queue</h3><span class="label" id="q-sub"></span></div>
-      <div class="qscroll">
-        <table>
-          <thead><tr><th>#</th><th>Lead</th><th>Enquiry</th><th class="r">Move-in</th><th>P(book)</th><th class="r">Value</th><th class="r">Priority</th><th>Play</th><th>Respond</th><th id="th-out" hidden>Booked?</th></tr></thead>
-          <tbody id="rows"></tbody>
-        </table>
+  <section class="panel" aria-labelledby="route-h">
+    <div class="routehead">
+      <div><span class="label">Today's routing</span><h2 id="route-h">Who handles each lead</h2></div>
+      <div class="seg" role="group" aria-label="Ranking rule">
+        <button type="button" data-rule="standard" aria-pressed="false">Standard score</button>
+        <button type="button" data-rule="priority" class="ours" aria-pressed="true">Lead Desk</button>
       </div>
     </div>
-    <aside class="rail" id="rail" aria-live="polite"></aside>
+    <div class="split" id="split" role="group" aria-label="Lead split by channel"></div>
+    <div class="splitkey" id="splitkey"></div>
+    <div class="capbox">
+      <div class="ctrl"><div class="slider-row"><span class="label">Expert calls today (team capacity)</span><b id="cap-out"></b></div><input id="cap" type="range" min="10" max="90" value="30" aria-label="Expert calls today"><span class="note" id="cap-note"></span></div>
+      <div class="ctrl"><div class="slider-row"><span class="label">Of those, engaged follow-ups (owned by their expert)</span><b id="cb-out"></b></div><input id="cb" type="range" min="0" max="10" value="5" aria-label="Expert calls reserved for engaged follow-ups"><span class="note" id="cb-note"></span></div>
+    </div>
+    <div class="verdict" id="verdict"></div>
   </section>
 
-  <section class="two">
-    <div class="panel">
-      <div><span class="label">Routing</span><h2>Expensive experts for valuable leads, cheap channels for the rest</h2></div>
-      <p>Expert time is the expensive resource. The two numbers that decide priority also decide <strong>who</strong> handles the lead.</p>
-      <div class="matrix" id="matrix"></div>
+  <section class="panel" aria-labelledby="list-h">
+    <div class="listhead">
+      <div><span class="label">The call list</span><h2 id="list-h">Today's leads, in the order they should be handled</h2></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button type="button" class="btn primary" id="ev-new">＋ New enquiry arrives</button>
+        <label class="toggle"><input id="reveal" type="checkbox"> Reveal real outcomes</label>
+        <button type="button" class="btn ghost" id="ev-reset" hidden>Reset the day</button>
+      </div>
     </div>
-    <div class="panel">
-      <div><span class="label">Evidence · 30-day simulation</span><h2>The busier the team, the bigger the gain</h2></div>
-      <p>Held-out leads arrive at about 92 a day. Each day the team calls a fixed number, chosen by each rule; uncalled leads may be lost each day (faster when move-in is near). Revenue counts commission plus extras. Results are averaged over 5 runs and shown against standard scoring.</p>
-      <div class="legend"><span><i style="border-color:var(--accent)"></i>Priority (P × revenue value)</span><span><i style="border-color:var(--muted);border-top-style:dashed"></i>Priority × urgency (tested, rejected)</span><span><i style="border-color:var(--ink-2);border-top-style:dotted"></i>Standard score</span></div>
-      <div class="chartbox" id="simchart"></div>
-      <p id="sim-note"></p>
+    <div class="log" id="log" aria-live="polite"></div>
+    <div class="fusum" id="fusum"></div>
+    <div class="rowsbox" id="rowsbox">
+      <div class="tabs" role="tablist" id="tabs"></div>
+      <div class="colhead"><span>#</span><span>Lead</span><span class="c-tags">Stage</span><span class="r c-ch">Chance now</span><span class="r">Expected ₹</span><span class="r c-due">Respond</span></div>
+      <div class="rows" id="rows"></div>
     </div>
   </section>
 
-  <details class="stress">
-    <summary><div><span class="label">Stress tests · for "how do you know?"</span><h2>I tried to beat the model and break the result</h2></div><span class="more">Show the stress tests</span></summary>
-    <div class="stress-body">
-    <div class="three">
-      <div class="panel"><h3>No algorithm beats it</h3><p style="font-size:13.5px">Same signals, five-fold cross-validation. The limit is the data, so the model stays simple.</p>
-        <table class="mini"><thead><tr><th>Model</th><th class="r">AUC</th><th class="r">Top-20% precision</th></tr></thead><tbody id="x-models"></tbody></table></div>
-      <div class="panel"><h3>Browsing behaviour does most of the work</h3><p style="font-size:13.5px">AUC when a signal is removed. Browsing behaviour carries most of the weight.</p>
-        <div class="bars" id="x-ablation"></div>
-        <div class="risk"><strong>Risk to check on real data:</strong> the dataset doesn't say when browsing time was measured. If it includes visits after the sales call, part of it is leakage. In production, count browsing up to the enquiry, then re-score as more arrives.</div></div>
-      <div class="panel"><h3>Better questions beat better algorithms</h3><p style="font-size:13.5px">Adding the enquiry form's answers lifted the model more than any algorithm did.</p>
-        <div class="lift"><b id="x-lift"></b><span class="label" id="x-lift-s"></span></div>
-        <p style="font-size:13.5px"><strong>So ask better questions.</strong> Three qualifying questions on University Living's enquiry form:</p>
-        <ul class="qs"><li>Do you have an offer letter or CAS yet?</li><li>Which intake are you moving for?</li><li>What's your weekly budget?</li></ul></div>
+  <section class="panel">
+    <div class="race">
+      <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
+        <div><span class="label">Run the season · 60 days, new and follow-up leads</span><h2>Same team, same leads. Who earns more?</h2></div>
+        <p style="font-size:13.5px">Every strategy gets the same leads, the same calls and the same 5-call limit. Bookers need several calls and stop looking after a while, as in real bank and Olist data. Averaged over 3 runs.</p>
+        <div class="racectl">
+          <button type="button" class="btn primary" id="r-play">▶ Run the season</button>
+          <div class="ctrl"><span class="label">Expert calls a day</span><div class="seg small" id="r-cap" role="group" aria-label="Team size"></div></div>
+          <div class="ctrl"><span class="label">Season</span><div class="seg small" id="r-season" role="group" aria-label="Season">
+            <button type="button" data-v="normal" aria-pressed="true">Normal</button><button type="button" data-v="peak" aria-pressed="false">Peak (2x enquiries)</button></div></div>
+          <div class="ctrl"><span class="label">Optimise for</span><div class="seg small" id="r-goal" role="group" aria-label="Goal">
+            <button type="button" data-v="revenue" aria-pressed="true">Revenue</button><button type="button" data-v="bookings" aria-pressed="false">Bookings</button></div></div>
+        </div>
+        <div class="chartbox" id="racechart"></div>
+        <p class="note" id="race-cap"></p>
+      </div>
+      <div class="runners" id="runners"></div>
     </div>
-    <div class="panel"><h3>Even with assumptions 4x off, or extras counted, the gain holds</h3>
-      <p style="font-size:13.5px">Revenue gain over standard scoring at 25 calls a day. Top row: uncalled leads lost slower or faster than assumed. Bottom row: more revenue counted per student, whatever the rent. Extras narrow the gap between cheap and expensive rooms, so the gain shrinks, but it stays positive.</p>
-      <div class="sens" id="x-sens"></div>
-      <div class="sens" id="x-extras" style="grid-template-columns:repeat(4,minmax(0,1fr))"></div></div>
+  </section>
+
+  <section class="panel">
+    <div><span class="label">Why it works</span><h2>Proof, in four numbers</h2></div>
+    <div class="tiles" id="tiles"></div>
+    <p id="proof-note" style="font-size:13.5px"></p>
+    <div class="assume">
+      <div class="ctrl"><span class="label">Check my assumption</span><div class="slider-row"><span class="label">Extras per booking (flights, money transfer, guarantor)</span><b id="extras-out"></b></div><input id="extras" type="range" min="0" max="30000" step="2500" value="15000" aria-label="Extras per booking"></div>
+      <div class="ctrl"><span class="label">Season-test gain at 25 calls a day</span><b class="num" id="extras-gain" style="font-size:22px;color:var(--accent)"></b><span class="note" id="extras-note"></span></div>
+      <p class="note">Extras are earned per student, whatever the rent, so they narrow the gap between cheap and expensive rooms. The season test was run at ₹0, ₹15,000 and ₹30,000; the gain holds at all three. Commission is fixed at 10% of rent: changing it scales every ₹ figure but barely changes who gets called.</p>
+    </div>
+  </section>
+
+  <details class="fold" id="fold">
+    <summary><div><span class="label">For "how do you know?"</span><h2>I tried to beat the model and break the result</h2></div><span class="open" id="fold-btn">Show the evidence ↓</span></summary>
+    <div class="foldbody">
+      <div class="three">
+        <div class="sub-panel"><h3>No algorithm beats the model</h3><p style="font-size:13px">Same signals, five-fold cross-validation. The limit is the data, so the model stays simple.</p>
+          <table class="mini"><thead><tr><th>Model</th><th class="r">AUC</th><th class="r">Top-20% precision</th></tr></thead><tbody id="x-models"></tbody></table></div>
+        <div class="sub-panel"><h3>Browsing behaviour does most of the work</h3><p style="font-size:13px">AUC when a signal is removed.</p><div class="bars" id="x-ablation"></div>
+          <div class="risk"><strong>Risk to check on real data:</strong> the dataset doesn't say when browsing time was measured. In production, count browsing up to the enquiry, then re-score as more arrives.</div></div>
+        <div class="sub-panel"><h3>Better questions beat better algorithms</h3><p style="font-size:13px">Adding enquiry-form answers lifted the model more than any algorithm did:</p>
+          <div style="font:700 26px/1 var(--mono);color:var(--accent)" id="x-lift"></div><span class="label" id="x-lift-s"></span>
+          <p style="font-size:13px"><strong>So ask three questions on the enquiry form:</strong> offer letter or CAS yet? · which intake? · weekly budget?</p></div>
+      </div>
+      <div class="sub-panel">
+        <h3>The gain holds in every scenario I tried</h3>
+        <p style="font-size:13px">Revenue vs standard scoring at 25 calls a day, 60 days. Row 1: what drives the gain. Row 2: seasons, follow-up timing, extras. Row 3: students who behave differently from the data the rule learned from.</p>
+        <div class="sens" id="x-parts" style="grid-template-columns:repeat(3,minmax(0,1fr))"></div>
+        <div class="sens" id="x-robust"></div>
+        <div class="sens" id="x-mismatch" style="grid-template-columns:repeat(5,minmax(0,1fr))"></div>
+        <p style="font-size:13px" id="x-rejected"></p>
+      </div>
+      <div class="sub-panel">
+        <h3>What if students wanting expensive rooms book less often?</h3>
+        <p style="font-size:13px">The test assigns each lead's property without any link to whether they booked. In reality, students enquiring about expensive rooms may be more price-sensitive, and the model wouldn't know. So I made high-value enquirers book less often and re-ran the 60-day test (25 calls a day):</p>
+        <div class="be" id="x-be"></div>
+        <p style="font-size:13px" id="x-be-note"></p>
+      </div>
+      <div class="sub-panel">
+        <h3>The busier the team, the bigger the gain</h3>
+        <div class="legend"><span><i style="border-color:var(--accent)"></i>Lead Desk</span><span><i style="border-color:var(--muted);border-top-style:dashed"></i>+ move-in urgency (rejected)</span><span><i style="border-color:var(--ink-2);border-top-style:dotted"></i>Standard score</span></div>
+        <div class="chartbox" id="simchart"></div>
+      </div>
     </div>
   </details>
+
+  <section class="panel" aria-labelledby="prod-h">
+    <div><span class="label">From concept to production</span><h2 id="prod-h">How it would run at University Living, and how to prove it</h2></div>
+    <div class="flow">
+      <div><span class="label">1 · Event</span><b>Something happens</b><span>New enquiry, a call outcome, a return to the site, a SABIE chat</span></div>
+      <div><span class="label">2 · Score</span><b>Scoring service</b><span>The same model as on this page; a few milliseconds per lead</span></div>
+      <div><span class="label">3 · Write back</span><b>CRM fields</b><span>Priority ₹, lane, response deadline and the reasons, on the lead record</span></div>
+      <div><span class="label">4 · Act</span><b>Queues</b><span>Expert call list, AI voice agent, WhatsApp nurture</span></div>
+      <div><span class="label">5 · Learn</span><b>Outcomes back</b><span>Bookings and move-ins feed retraining before each intake</span></div>
+    </div>
+    <div class="three">
+      <div class="sub-panel"><h3>Run it safely</h3><p style="font-size:13px">Retrain before each intake (Sept, Jan) on University Living's own CRM history, including its real fade curve and best call limit. Watch two things weekly: are predicted chances still matching real booking rates, and is the gain still there against a small holdout routed the old way.</p></div>
+      <div class="sub-panel"><h3>Prove it with a pilot</h3><p style="font-size:13px" id="pilot"></p></div>
+      <div class="sub-panel"><h3>Next: AI that reads the conversation</h3><p style="font-size:13px">The biggest model gain came from better information, not a better algorithm. SABIE chats and AI voice-agent calls already contain it: an LLM can pull out <strong>CAS status, intake and weekly budget</strong> and add them to the score, with no extra form for the student.</p></div>
+    </div>
+    <div class="promise"><strong>Every student gets a first response within 24 hours</strong>, whether from an expert, the AI voice agent or WhatsApp. Lead Desk decides who gets the expensive channel first; it never decides who gets ignored.</div>
+  </section>
 
   <section class="panel">
     <div><span class="label">Try it</span><h2>Score a new enquiry and see where it lands today</h2></div>
     <div class="scorer">
       <form class="form" id="newlead" autocomplete="off">
-        <div class="f"><label for="n-source">Lead source</label><select id="n-source">
-          <option>Counsellor / referral</option><option selected>Search (SEO)</option><option>Direct traffic</option><option>Website chat (SABIE-like)</option><option>Social / affiliate sites</option></select></div>
-        <div class="f"><label for="n-origin">Submitted via</label><select id="n-origin">
-          <option selected>Website enquiry form</option><option>App / platform lead</option><option>Counsellor / partner submitted</option><option>Bulk import (fairs, uni lists)</option></select></div>
+        <div class="f"><label for="n-source">Lead source</label><select id="n-source"><option>Counsellor / referral</option><option selected>Search (SEO)</option><option>Direct traffic</option><option>Website chat (SABIE-like)</option><option>Social / affiliate sites</option></select></div>
+        <div class="f"><label for="n-origin">Submitted via</label><select id="n-origin"><option selected>Website enquiry form</option><option>App / platform lead</option><option>Counsellor / partner submitted</option><option>Bulk import (fairs, uni lists)</option></select></div>
         <div class="f"><label for="n-city">Property city</label><select id="n-city"><option selected>London</option><option>Manchester</option><option>Birmingham</option><option>Other UK city</option></select></div>
         <div class="f"><label for="n-room">Room type</label><select id="n-room"><option>En-suite</option><option selected>Studio</option></select></div>
         <div class="f"><label for="n-min">Minutes browsing <output id="o-min"></output></label><input id="n-min" type="range" min="0" max="60" value="14"></div>
@@ -356,73 +361,72 @@ footer p{color:var(--muted)}
   </section>
 
   <section class="panel">
-    <div><span class="label">The data</span><h2>What's real, what's simulated, what's assumed</h2></div>
+    <div><span class="label">How it works and what's real</span><h2>Five steps, four real datasets</h2></div>
+    <p style="font-size:13.5px"><strong>1</strong> An enquiry arrives with its property attached → <strong>2</strong> only information known at that moment is used (post-call notes leak the outcome) → <strong>3</strong> the model gives the chance to book, lowered as the lead stays open → <strong>4</strong> × revenue value (rent commission + extras) × visa grant rate = priority → <strong>5</strong> engaged students keep their expert; the rest are ranked: the top get experts with a deadline, then the AI agent or nurture, re-scored on every action. After 5 unanswered calls, nurture. On rollout: merge duplicate enquiries from the same student.</p>
     <div class="honesty">
       <div class="hcol"><span class="pill" style="--c:var(--good)">Real</span><ul>
         <li>9,240 leads with real booked / not booked outcomes (Kaggle, X Education), mapped to University Living channels</li>
-        <li>Rent levels: London en-suite ₹32,893 and studio ₹43,307 a week; UK average ₹19,431 and ₹28,956 (published 2025/26 surveys: £259, £341, £153, £228)</li>
-        <li>Every score on this page comes from the trained model</li></ul></div>
-      <div class="hcol"><span class="pill" style="--c:var(--close)">Simulated</span><ul>
-        <li>The property each lead enquired on (city, room, tenancy, move-in date). It's drawn independently of the outcome, so no link between value and intent is invented.</li>
-        <li>Daily loss of uncalled leads in the 30-day test</li></ul></div>
+        <li>How long leads stay open: 8,000 leads with dates (Olist). Half of deals close within 14 days</li>
+        <li>When to stop calling: 41,188 customers called repeatedly (UCI bank). By the 5th call, a call converts at under half the rate of the 1st</li>
+        <li>Visa: about 96% of Indian students' UK study visas granted (Home Office, 2025). Rents: 2025/26 UK surveys</li></ul></div>
+      <div class="hcol"><span class="pill" style="--c:var(--ai)">Simulated</span><ul>
+        <li>The property each lead enquired on, drawn without any link to the outcome, so no pattern is invented. The break-even test shows how much price sensitivity it would take to cancel the gain</li>
+        <li>Today's follow-ups' call history, how many calls each booker needs, and how long they keep looking: drawn from the real bank and Olist patterns, and stress-tested with different ones</li></ul></div>
       <div class="hcol"><span class="pill" style="--c:var(--nurture)">Assumed</span><ul>
-        <li>Commission rate (adjustable above)</li>
-        <li>Extras per booking: ₹15,000 expected from flights, money transfer, guarantor and essentials, blended across take-up (adjustable above)</li>
-        <li>Conversion rate comes from the proxy data (38.5%). University Living's raw enquiries likely convert lower, which stretches the team further and increases the gain from value ranking.</li>
-        <li>Lead volume: this is one team's slice of the day. What matters is capacity as a share of leads.</li>
-        <li>Exchange rate: ₹127 per £ (Oct–Nov 2026)</li>
-        <li>Manchester and Birmingham rents: midpoints of published ranges</li>
-        <li>With University Living's CRM data, all of these are replaced by real values. The method stays the same.</li></ul></div>
+        <li>Commission 10% of rent, extras ₹15,000 per booking (adjustable above), ₹127 per £</li>
+        <li>Engaged follow-ups (shortlist sent, deposit or visa stage) take a set number of expert calls; the datasets can't tell engaged from unresponsive leads, so it's a setting, not a model</li>
+        <li>The 38.5% booking rate comes from the proxy data. Real enquiries likely convert lower, which stretches the team and increases the gain</li>
+        <li>Leads with the AI agent or nurture count as not called in the season test, so the gain is conservative</li></ul></div>
     </div>
   </section>
 
   <footer>
-    <p><strong>Built with AI:</strong> I used Claude to research University Living's business, audit the data, write the model and simulation, and build this console. The product decisions were mine: rank by value, keep post-call data out, test urgency and drop it when it failed, and match channel cost to lead value.</p>
-    <p>Code: <span class="num">workflow/engine.py</span>, <span class="num">train.py</span> · Analysis notebook: <span class="num">Lead_Scoring_University_Living.ipynb</span></p>
+    <p><strong>Built with AI:</strong> I used Claude to research University Living's business, audit the data, write the model and simulations, and build this console. The product decisions were mine: rank by value, keep post-call data out, put new and follow-up leads in one plan, keep engaged students with their expert, and test my own ideas, dropping the ones that failed.</p>
+    <p>Code and analysis: github.com/Yash-1273/lead-priority-console</p>
   </footer>
 </div>
+
+<div class="scrim" id="scrim" hidden></div>
+<aside class="file" id="file" hidden aria-label="Lead file" aria-live="polite"></aside>
 
 <script>
 const D = __DATA__;
 const $ = id => document.getElementById(id);
 const RENT = Object.fromEntries(D.rent.map(r => [r.city + '|' + r.room, r.weekly]));
 const NUMF = ['visits', 'minutes_browsing', 'pages_per_visit'];
-const PLAYS = {
-  Protect:        { c: 'var(--protect)',  owner: 'Senior expert',        action: 'Call now and lock the room before a competitor does' },
-  Persuade:       { c: 'var(--persuade)', owner: 'Accommodation expert', action: 'Consultative call: shortlist, price match, visa worries' },
-  'Close cheaply':{ c: 'var(--close)',    owner: 'AI voice agent',       action: 'Fast AI call with a booking link; expert on hand-off' },
-  Nurture:        { c: 'var(--nurture)',  owner: 'Nurture automation',   action: 'WhatsApp + email sequence; re-score on new activity' },
+const FX = D.fx, LIMIT = D.pipe.call_limit, SH = D.shapes;
+const LANES = {
+  experts: { name: 'Experts', c: 'var(--expert)', blurb: 'Top leads by priority, with a response deadline' },
+  ai:      { name: 'AI voice agent', c: 'var(--ai)', blurb: 'Likely to book: an AI call with a booking link, expert on hand-off' },
+  nurture: { name: 'Nurture', c: 'var(--nurture)', blurb: 'WhatsApp + email; back in the queue when the student acts' },
 };
-const S = { rule: 'priority', k: 25, rate: 0.10, extras: D.ancillary_inr, reveal: false, sel: null, change: null, touched: new Set() };
-const FX = 127;   // ASSUMPTION: ₹ per £, Oct–Nov 2026
+const S = { rule: 'priority', cap: 30, cb: 5, rate: D.commission_rate, extras: D.ancillary_inr, reveal: false, tab: 'experts',
+            sel: null, open: false, change: null, touched: new Set(), log: [], fresh: 0, lane: new Map() };
 const gbp = v => '₹' + Math.round(v * FX).toLocaleString('en-IN');
-const lakh = v => { const r = v * FX; return r >= 1e5 ? '₹' + (r / 1e5).toFixed(1) + ' lakh' : gbp(v); };
+const lakh = v => { const r = v * FX; return Math.abs(r) >= 1e5 ? '₹' + (r / 1e5).toFixed(1) + ' lakh' : gbp(v); };
 const pct = v => Math.round(v * 100) + '%';
+const sg = v => (v >= 0 ? '+' : '') + (v * 100).toFixed(1) + '%';
+const place = l => (l.city === 'Other UK city' ? 'UK' : l.city) + ' ' + l.room.toLowerCase();
 
-// ---- the exact trained model, evaluated in the browser ----
-function vec(l) {
-  return D.columns.map(c => {
-    if (c.startsWith('channel_origin_')) return l.channel_origin === c.slice(15) ? 1 : 0;
-    if (c.startsWith('channel_source_')) return l.channel_source === c.slice(15) ? 1 : 0;
-    let x = l[c]; if (x == null || Number.isNaN(x)) x = D.medians[c];
-    return NUMF.includes(c) ? Math.log1p(x) : x;
-  });
-}
-function predict(l) {
-  const x = vec(l); let r = D.model.baseline;
+// ---- the exact trained model, in the browser ----
+function vec(l) { return D.columns.map(c => {
+  if (c.startsWith('channel_origin_')) return l.channel_origin === c.slice(15) ? 1 : 0;
+  if (c.startsWith('channel_source_')) return l.channel_source === c.slice(15) ? 1 : 0;
+  let x = l[c]; if (x == null || Number.isNaN(x)) x = D.medians[c];
+  return NUMF.includes(c) ? Math.log1p(x) : x; }); }
+function predict(l) { const x = vec(l); let r = D.model.baseline;
   for (const t of D.model.trees) { let i = 0; while (!t[i][5]) i = x[t[i][0]] <= t[i][1] ? t[i][2] : t[i][3]; r += t[i][6]; }
-  return 1 / (1 + Math.exp(-r));
-}
+  return 1 / (1 + Math.exp(-r)); }
+function fadeF(d) { const xs = SH.fade_days, ys = SH.fade; if (d <= xs[0]) return ys[0];
+  for (let i = 1; i < xs.length; i++) if (d <= xs[i]) return ys[i - 1] + (ys[i] - ys[i - 1]) * (d - xs[i - 1]) / (xs[i] - xs[i - 1]);
+  return ys[ys.length - 1]; }
 function enrich(l) {
-  const commission = RENT[l.city + '|' + l.room] * l.weeks * S.rate, extras = S.extras / FX;
-  const value = commission + extras;
-  const highV = commission >= D.value_cut * S.rate / D.commission_rate, highP = l.p_book >= D.p_high;
-  const play = highP && highV ? 'Protect' : highV ? 'Persuade' : highP ? 'Close cheaply' : 'Nurture';
-  const sla = highP && highV ? '5 min' : (l.days_to_move_in <= 30 && (highP || highV)) ? '15 min' : (highP || highV) ? '2 hours' : '24 hours';
-  return Object.assign(l, { commission, extras, value, priority: l.p_book * value, play, sla, highV, highP });
-}
-function reasons(l) {
-  const r = [];
+  l.commission = RENT[l.city + '|' + l.room] * l.weeks * S.rate; l.extras = S.extras / FX; l.value = l.commission + l.extras;
+  l.p_now = l.p_book * fadeF(l.days_open); l.priority = l.p_now * l.value * D.visa_grant;
+  l.highV = l.commission >= D.value_cut * S.rate / D.commission_rate; l.highP = l.p_now >= D.p_high;
+  l.sla = l.highP && l.highV ? '5 min' : (l.days_to_move_in <= 30 && (l.highP || l.highV)) ? '15 min' : (l.highP || l.highV) ? '2 hours' : '24 hours';
+  return l; }
+function reasons(l) { const r = [];
   if (l.channel_source === 'Counsellor / referral' || l.channel_origin === 'Counsellor / partner submitted') r.push('Counsellor or referral lead: these book at over 90%');
   if (l.minutes_browsing >= 10) r.push(`Browsed ${Math.round(l.minutes_browsing)} min, past the 10-minute line where booking rates jump 3–4x`);
   else if (l.minutes_browsing > 0 && l.minutes_browsing < 5) r.push('Short browsing session');
@@ -430,238 +434,316 @@ function reasons(l) {
   if (l.channel_source === 'Website chat (SABIE-like)') r.push('Chat lead: high volume, lower intent historically');
   if (l.profile_fields_filled === 3) r.push('Filled the full enquiry form'); else if (l.profile_fields_filled === 0) r.push('Left the enquiry form empty');
   if (l.city === 'London' && l.room === 'Studio') r.push('London studio: the highest commission value');
-  if (l.days_to_move_in <= 30) r.push(`Moves in within ${l.days_to_move_in} days: will decide this week`);
-  if (l.no_call) r.push('Opted out of calls: contact on WhatsApp only');
-  return r.length ? r : ['No strong signal either way'];
+  if (l.days_open >= 7) r.push(`Open ${l.days_open} days: half of deals close within 2 weeks, so ${pct(fadeF(l.days_open))} of its chance is left`);
+  if (l.attempts) r.push(`${l.attempts} of ${LIMIT} calls used without a yes${l.attempts >= LIMIT ? ': moved to nurture' : ''}`);
+  if (l.days_to_move_in <= 30) r.push(`Moves in within ${l.days_to_move_in} days: will decide soon, so a faster response`);
+  if (l.no_call) r.push('Opted out of calls: WhatsApp only');
+  return r.length ? r : ['No strong signal either way']; }
+
+// ---- today's leads and the plan ----
+const clock = i => { const m = 8 * 60 + Math.round(i * 600 / D.inbox.length); return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); };
+let leads = [];
+function resetDay() {
+  leads = [...D.inbox.map((l, i) => ({ ...l, attempts: 0, days_open: 0, moved_on: false, arrival: i, when: clock(i) })),
+           ...D.pipe.ongoing.map(l => ({ ...l, arrival: -1000 - l.days_open, when: `${l.days_open} days ago` }))];
+  S.touched.clear(); S.change = null; S.log = []; S.fresh = 0; S.sel = null; S.lane = new Map();
+}
+const keyOf = { standard: l => l.p_book, priority: l => l.priority };
+const realBooker = l => l.booked && !l.moved_on;
+const sum = (xs, f) => xs.reduce((s, l) => s + f(l), 0);
+function plan(rule) {
+  leads.forEach(enrich);
+  const q = Math.max(0, S.cap - S.cb);                                     // expert calls left for the open queue
+  const eligible = leads.filter(l => l.attempts < LIMIT).sort((a, b) => keyOf[rule](b) - keyOf[rule](a) || a.arrival - b.arrival);
+  const experts = eligible.slice(0, q), rest = eligible.slice(q);
+  const ai = rest.filter(l => l.highP && !l.no_call).sort((a, b) => b.priority - a.priority);
+  const nurture = [...rest.filter(l => !(l.highP && !l.no_call)), ...leads.filter(l => l.attempts >= LIMIT)].sort((a, b) => b.priority - a.priority);
+  return { experts, ai, nurture, q };
 }
 
-// ---- inbox ----
-const inbox = D.inbox.map((l, i) => Object.assign({}, l, { arrival: i, time: arrivalTime(i) }));
-const ORIG = new Map(inbox.map(l => [l.lead_id, { minutes_browsing: l.minutes_browsing, visits: l.visits, profile_fields_filled: l.profile_fields_filled, p_book: l.p_book }]));
-function arrivalTime(i) { const m = 8 * 60 + Math.round(i * 600 / 92); return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); }
-const keyOf = { arrival: l => -l.arrival, standard: l => l.p_book, priority: l => l.priority };
-const ranked = rule => [...inbox].sort((a, b) => keyOf[rule](b) - keyOf[rule](a));
-function stats(rule) {
-  const top = ranked(rule).slice(0, S.k);
-  return { book: top.reduce((s, l) => s + l.p_book, 0), com: top.reduce((s, l) => s + l.priority, 0),
-           realB: top.reduce((s, l) => s + l.booked, 0), realC: top.reduce((s, l) => s + l.booked * l.value, 0) };
+function render() {
+  const P = plan(S.rule), std = plan('standard');
+  const now = new Map(); ['experts', 'ai', 'nurture'].forEach(k => P[k].forEach(l => now.set(l.lead_id, k))); S.lane = now;
+  const nNew = leads.filter(l => !l.attempts).length;
+  const fuQ = P.experts.filter(l => l.attempts).length;
+  setText('k-leads', leads.length); $('k-leads-s').textContent = `${nNew} new today + ${leads.length - nNew} follow-ups not booked yet`;
+  setText('k-cap', S.cap); const nFu = S.cb + fuQ, nNw = P.q - fuQ;
+  $('k-cap-s').textContent = `${nFu} follow-up${nFu === 1 ? '' : 's'} (${S.cb} engaged + ${fuQ} not booked yet) + ${nNw} new enquir${nNw === 1 ? 'y' : 'ies'}`;
+  const ev = sum(P.experts, l => l.priority), evs = sum(std.experts, l => l.priority);
+  const m = measured(P.q);
+  $('k-gain-l').textContent = `Measured gain · 60-day test at ${P.q} calls a day`;
+  setText('k-gain', sg(m.gain) + ' revenue');
+  $('k-gain-s').textContent = `${lakh(m.extra / FX)} more over 60 days than standard scoring, ${m.bk >= 0 ? '+' : ''}${(m.bk * 100).toFixed(0)}% bookings`;
+  // split bar
+  const segs = ['experts', 'ai', 'nurture'].map(k => ({ k, n: P[k].length, v: sum(P[k], l => l.priority), fu: P[k].filter(l => l.attempts).length }));
+  $('split').innerHTML = segs.map(s => `<button type="button" style="--c:${LANES[s.k].c};flex-grow:${Math.max(s.n, 6)}" data-k="${s.k}" aria-pressed="${S.tab === s.k}"><b>${s.n} · ${LANES[s.k].name}</b><span>${lakh(s.v)} expected</span></button>`).join('');
+  $('split').querySelectorAll('button').forEach(b => b.addEventListener('click', () => { S.tab = b.dataset.k; render(); }));
+  $('splitkey').innerHTML = segs.map(s => `<div style="--c:${LANES[s.k].c}"><b>${LANES[s.k].name}: ${s.n}</b><span>${s.n - s.fu} new · ${s.fu} follow-up${s.fu === 1 ? "" : "s"}${s.k === 'experts' && S.cb ? ` · plus ${S.cb} engaged follow-ups` : ''}. ${LANES[s.k].blurb}.</span></div>`).join('');
+  let vtxt = `<span>Today, expected revenue from expert calls (model): <b>${lakh(ev)}</b></span>`;
+  if (S.rule === 'priority') vtxt += `<span>Standard scoring would send <b>${lakh(evs)}</b></span>`;
+  if (S.reveal) { const r = sum(P.experts, l => realBooker(l) * l.value * D.visa_grant), rs = sum(std.experts, l => realBooker(l) * l.value * D.visa_grant);
+    vtxt += `<span>What really happened: <b>${lakh(r)}</b> from ${sum(P.experts, realBooker)} real bookers${S.rule === 'priority' ? ` vs ${lakh(rs)} (${sum(std.experts, realBooker)}) with standard` : ''}</span>`; }
+  $('verdict').innerHTML = vtxt;
+  $('cap-out').textContent = `${S.cap} calls · ${leads.length} leads`; $('cb-out').textContent = S.cb;
+  const up = Math.min(90, P.q + 5), more = (curveAt('priority', up) - curveAt('priority', P.q)) * FX;
+  $('cap-note').innerHTML = P.q >= 90 ? 'At this capacity nearly every lead gets an expert.' :
+    `What's one more expert worth? <b>+${up - P.q} calls a day → +${lakh(more / FX)}</b> over 60 days with Lead Desk (season test).`;
+  $('cb-note').innerHTML = `In production this number comes from your CRM stages (shortlist, deposit, visa); here it's a setting. Leaves <b>${P.q} calls</b> for the open queue${S.cap - MIN_Q < 10 ? ` (at most ${Math.max(0, S.cap - MIN_Q)} callbacks, so the queue keeps at least ${MIN_Q})` : ''}.`;
+  // tabs + list
+  $('tabs').innerHTML = segs.map(s => `<button type="button" role="tab" style="--c:${LANES[s.k].c}" aria-selected="${S.tab === s.k}" data-k="${s.k}">${LANES[s.k].name}<span class="num">${s.n}</span></button>`).join('');
+  $('tabs').querySelectorAll('button').forEach(b => b.addEventListener('click', () => { S.tab = b.dataset.k; render(); }));
+  const xs = P[S.tab], shown = S.tab === 'experts' ? xs : xs.slice(0, 40);
+  const cbRows = S.tab === 'experts' && S.cb ? `<div class="row callback"><span class="rk">${S.cb}×</span><span class="who"><b>Engaged follow-ups, owned by their expert</b><span>Shortlist sent, deciding, or at deposit / visa stage: scheduled callbacks, not ranked</span></span><span class="tags"><span class="tag fu">Engaged</span></span><span class="ch r">–</span><span class="pri">–</span><span class="due"><span class="tag">Scheduled</span></span></div>` : '';
+  const notes = { experts: '', ai: 'Likely to book but lower value: an AI voice call with a booking link. If the student hesitates or asks something tricky, an expert takes over.',
+    nurture: 'Low chance today, or several calls without a booking. Kept warm by WhatsApp and email in the expert\'s name, and back to an expert the moment they reply or return to the site. Many follow-ups open this long have already booked elsewhere, so expert calls go to students who are still deciding.' };
+  const noteRow = notes[S.tab] ? `<div class="listnote" style="--c:${LANES[S.tab].c}">${notes[S.tab]}</div>` : '';
+  $('rows').innerHTML = noteRow + cbRows + shown.map((l, i) => rowHTML(l, i)).join('') + (xs.length > shown.length ? `<div class="more">+ ${xs.length - shown.length} more in ${LANES[S.tab].name}</div>` : '');
+  $('rowsbox').style.setProperty('--c', LANES[S.tab].c);
+  const fu = k => P[k].filter(l => l.attempts).length;
+  $('fusum').innerHTML = `<span><b>Follow-ups today:</b></span><span><span class="dot" style="--c:var(--persuade)"></span><b>${S.cb} engaged</b>, all with their own expert</span>`
+    + `<span><b>${leads.filter(l => l.attempts).length} called, not booked yet</b> → <span class="dot" style="--c:var(--expert)"></span>${fu('experts')} expert · <span class="dot" style="--c:var(--ai)"></span>${fu('ai')} AI agent · <span class="dot" style="--c:var(--nurture)"></span>${fu('nurture')} nurture</span>`;
+  $('rows').querySelectorAll('.row[data-id]').forEach(r => r.addEventListener('click', () => openFile(+r.dataset.id)));
+  // log + events
+  $('log').innerHTML = S.log.length ? S.log.slice(-3).reverse().map(x => `<div>${x}</div>`).join('') : '<div>Click a lead to open its file. Try <b>＋ New enquiry arrives</b>, or open a lead and mark a call unanswered, to see the plan update live.</div>';
+  $('ev-reset').hidden = !S.log.length; $('ev-new').disabled = S.fresh >= D.race.fresh.length;
+  $('extras-out').textContent = '₹' + S.extras.toLocaleString('en-IN');
+  const xg = extrasGain(S.extras);
+  setText('extras-gain', sg(xg));
+  $('extras-note').textContent = `revenue vs standard scoring over 60 days, with ₹${S.extras.toLocaleString('en-IN')} extras per booking (tested at ₹0, ₹15,000, ₹30,000)`;
+  if (S.open) renderFile();
+  if ($('fold').open) drawCurve();
+  scoreNew();
 }
-function delta(el, v, base, fmt) {
-  if (S.rule === 'standard') { el.textContent = 'baseline'; el.className = 'delta'; return; }
-  const d = v - base; el.textContent = (d >= 0 ? '+' : '−') + fmt(Math.abs(d)) + ' vs standard score';
-  el.className = 'delta ' + (d >= 0 ? 'up' : 'down');
+function setText(id, v) { const e = $(id); if (e.textContent !== String(v)) { e.textContent = v; e.classList.remove('pulse'); void e.offsetWidth; e.classList.add('pulse'); } }
+function curveAt(rule, q) {   // season-test revenue (GBP) for a rule at q calls a day, interpolated
+  const xs = D.pipe.caps, c = D.pipe.curve[rule];
+  let j = xs.findIndex(x => x >= q); if (j < 0) j = xs.length - 1; if (j === 0) j = 1;
+  const t = Math.min(1, Math.max(0, (q - xs[j - 1]) / (xs[j] - xs[j - 1])));
+  return c[j - 1][0] + (c[j][0] - c[j - 1][0]) * t;
 }
-
-const rowsEl = $('rows'), rowMap = new Map();
-function buildRow(l) {
-  const tr = document.createElement('tr'); tr.dataset.id = l.lead_id; tr.tabIndex = 0;
-  tr.addEventListener('click', () => select(l.lead_id));
-  tr.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(l.lead_id); } });
-  rowMap.set(l.lead_id, tr); return tr;
+function extrasGain(x) {      // tested points: ₹0 and ₹30,000 from the stress tests, ₹15,000 from the main curve (25 calls)
+  const r = D.pipe.robust, k = D.pipe.caps.indexOf(25);
+  const g0 = r.find(v => v.name.startsWith('No extras')).gain, g30 = r.find(v => v.name.startsWith('Extras doubled')).gain;
+  const g15 = D.pipe.curve.priority[k][0] / D.pipe.curve.standard[k][0] - 1;
+  return x <= 15000 ? g0 + (g15 - g0) * x / 15000 : g15 + (g30 - g15) * (x - 15000) / 15000;
 }
-function rowHTML(l, rank, stdRank) {
-  const mv = stdRank - rank, p = PLAYS[l.play];
-  const mvHTML = S.rule === 'priority' && Math.abs(mv) >= 3 ? `<span class="mv ${mv > 0 ? 'up' : 'down'}">${mv > 0 ? '▲' : '▼'}${Math.abs(mv)}</span>` : '';
-  return `<td><span class="rank">${rank}${mvHTML}</span></td>
-    <td><div class="lead"><b>#${l.lead_id}${S.touched.has(l.lead_id) ? '<span class="badge">re-scored</span>' : ''}</b><span>${l.time} · ${l.channel_source}</span></div></td>
-    <td><div class="lead"><b>${l.university}</b><span>${l.city === 'Other UK city' ? 'UK' : l.city} · ${l.room} · ${l.weeks} wks</span></div></td>
-    <td class="r num">${l.days_to_move_in} d</td>
-    <td><span class="pbar"><i style="--w:${pct(l.p_book)}"></i><span class="num">${pct(l.p_book)}</span></span></td>
-    <td class="r num">${gbp(l.value)}</td>
-    <td class="r num"><b>${gbp(l.priority)}</b></td>
-    <td><span class="play" style="--c:${p.c}">${l.play}</span></td>
-    <td><span class="due ${l.sla === '5 min' ? 'hotdue' : ''}">${l.sla}</span></td>
-    <td ${S.reveal ? '' : 'hidden'}>${l.booked ? '<span class="out-yes">Booked</span>' : '<span class="out-no">No</span>'}</td>`;
+function measured(q) {     // 60-day test results, interpolated to today's queue calls
+  const P = D.pipe, xs = P.caps, c = P.curve, at = (r, j) => c[r][j];
+  let j = xs.findIndex(x => x >= q); if (j < 0) j = xs.length - 1; if (j === 0) j = 1;
+  const t = Math.min(1, Math.max(0, (q - xs[j - 1]) / (xs[j] - xs[j - 1])));
+  const lerp = (r, k) => at(r, j - 1)[k] + (at(r, j)[k] - at(r, j - 1)[k]) * t;
+  const pr = lerp('priority', 0), st = lerp('standard', 0);
+  return { gain: pr / st - 1, extra: (pr - st) * FX, bk: lerp('priority', 1) / lerp('standard', 1) - 1 };
 }
-let cutRow = document.createElement('tr'); cutRow.className = 'cut';
-
-function render(animate) {
-  inbox.forEach(enrich);
-  const order = ranked(S.rule), stdOrder = ranked('standard');
-  const stdRank = new Map(stdOrder.map((l, i) => [l.lead_id, i + 1]));
-  const first = new Map(); if (animate) rowMap.forEach((tr, id) => first.set(id, tr.getBoundingClientRect().top));
-  order.forEach((l, i) => {
-    const tr = rowMap.get(l.lead_id) || buildRow(l);
-    tr.innerHTML = rowHTML(l, i + 1, stdRank.get(l.lead_id));
-    tr.classList.toggle('wait', i >= S.k); tr.classList.toggle('sel', l.lead_id === S.sel);
-    rowsEl.appendChild(tr);
-    if (i === S.k - 1) { cutRow.innerHTML = `<td colspan="10">Expert capacity reached · ${inbox.length - S.k} leads below go to the AI agent, nurture, or tomorrow</td>`; rowsEl.appendChild(cutRow); }
-  });
-  if (S.k >= inbox.length) cutRow.remove();
-  if (animate && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    rowMap.forEach((tr, id) => { const dy = first.get(id) - tr.getBoundingClientRect().top; if (!dy) return;
-      tr.animate([{ transform: `translateY(${dy}px)` }, { transform: 'none' }], { duration: 550, easing: 'cubic-bezier(.2,.7,.2,1)' }); });
-  }
-  $('th-out').hidden = !S.reveal;
-  const names = { arrival: 'Arrival order', standard: 'Standard score', priority: 'Priority' };
-  $('q-title').textContent = `Today's queue · ${names[S.rule]}`;
-  $('q-sub').textContent = `${inbox.length} leads · top ${S.k} get an expert`;
-
-  const cur = stats(S.rule), std = stats('standard');
-  $('kp-called').textContent = `${S.k} / ${inbox.length}`; $('kp-called-s').textContent = `${pct(S.k / inbox.length)} of today's leads`;
-  $('kp-book').textContent = cur.book.toFixed(1); delta($('kp-book-d'), cur.book, std.book, v => v.toFixed(1));
-  $('kp-com').textContent = lakh(cur.com); delta($('kp-com-d'), cur.com, std.com, gbp);
-  if (S.reveal) {
-    $('kp-real-l').textContent = 'What really happened';
-    $('kp-real').textContent = lakh(cur.realC); delta($('kp-real-d'), cur.realC, std.realC, gbp);
-    $('kp-real-d').textContent += ` · ${cur.realB} bookings`;
-  } else { $('kp-real-l').textContent = 'What really happened'; $('kp-real').textContent = 'Hidden'; $('kp-real-d').textContent = 'Turn on "Reveal real outcomes"'; $('kp-real-d').className = 'delta'; }
-  $('k-out').textContent = `${pct(S.k / inbox.length)} · ${S.k} of ${inbox.length}`;
-  $('extras-out').textContent = '₹' + S.extras.toLocaleString('en-IN'); $('rate-out').textContent = pct(S.rate);
-  renderVersus(stdOrder); renderMatrix(); renderRail(); drawSim(); scoreNew();
-}
-
-function renderVersus(stdOrder) {
-  // A lead standard scoring calls but priority drops, against one priority promotes past it
-  const prioRank = new Map(ranked('priority').map((l, i) => [l.lead_id, i + 1]));
-  const stdTop = stdOrder.slice(0, S.k), prioTop = new Set(ranked('priority').slice(0, S.k).map(l => l.lead_id));
-  const dropped = stdTop.filter(l => !prioTop.has(l.lead_id)).sort((a, b) => b.p_book - a.p_book)[0];
-  const promoted = ranked('priority').slice(0, S.k).filter(l => !stdTop.some(s => s.lead_id === l.lead_id)).sort((a, b) => a.p_book - b.p_book)[0];
-  $('vs-title').textContent = dropped ? `A ${pct(dropped.p_book)} lead can be the wrong call` : 'Both rankings agree at this capacity';
-  if (!dropped || !promoted) { $('versus').innerHTML = `<p>At ${S.k} calls both rules pick the same leads. Lower the call capacity to see where they disagree.</p>`; return; }
-  const card = (l, verdict) => `<button type="button" class="vcard" data-id="${l.lead_id}">
-    <span class="label">Lead #${l.lead_id} · ${l.channel_source}</span>
-    <div class="row"><span>Chance to book</span><b class="num">${pct(l.p_book)}</b></div>
-    <div class="row"><span>Enquiry</span><b>${l.city === 'Other UK city' ? 'Other UK city' : l.city} ${l.room.toLowerCase()}, ${l.weeks} wks</b></div>
-    <div class="row"><span>Revenue if booked</span><b class="num">${gbp(l.value)}</b></div>
-    <div class="row"><span>Expected value of the call</span><b class="num">${gbp(l.priority)}</b></div>
-    <div class="verdict">${verdict}</div></button>`;
-  $('versus').innerHTML = card(dropped, `Standard scoring calls this lead (rank #${stdOrder.indexOf(dropped) + 1}). Priority moves it to #${prioRank.get(dropped.lead_id)}.`)
-    + '<span class="vs">vs</span>'
-    + card(promoted, `Standard scoring skips it (rank #${stdOrder.indexOf(promoted) + 1}). Priority calls it at #${prioRank.get(promoted.lead_id)}: ${gbp(promoted.priority - dropped.priority)} more expected per call.`);
-  $('versus').querySelectorAll('.vcard').forEach(b => b.addEventListener('click', () => select(+b.dataset.id)));
+function rowHTML(l, i) {
+  const stage = l.attempts ? `<span class="tag fu">${l.attempts} call${l.attempts > 1 ? 's' : ''} · not booked yet · ${l.days_open}d</span>` : '<span class="tag new">New today</span>';
+  const out = !S.reveal ? '' : l.moved_on ? `<span class="tag gone">${l.booked ? 'Booked elsewhere' : 'Moved on'}</span>` : l.booked ? '<span class="tag yes">Booked</span>' : '<span class="tag">No booking</span>';
+  const due = S.tab === 'experts' ? `<span class="tag ${l.sla === '5 min' ? 'sla' : ''}">${l.sla}</span>` : `<span class="tag">${S.tab === 'ai' ? 'AI call' : 'WhatsApp'}</span>`;
+  return `<button type="button" class="row${l.lead_id === S.sel ? ' sel' : ''}${S.flash === l.lead_id ? ' flash' : ''}" data-id="${l.lead_id}">
+    <span class="rk">${S.tab === 'experts' ? i + 1 : ''}</span>
+    <span class="who"><b>${l.university}</b><span>${place(l)} · ${l.channel_source} · ${l.when}</span></span>
+    <span class="tags">${stage}${l.no_call ? '<span class="tag">WhatsApp only</span>' : ''}${S.touched.has(l.lead_id) ? '<span class="tag new">re-scored</span>' : ''}${out}</span>
+    <span class="ch r">${pct(l.p_now)}<small>× ${lakh(l.value)}</small></span>
+    <span class="pri">${gbp(l.priority)}</span>
+    <span class="due">${due}</span></button>`;
 }
 
-function renderMatrix() {
-  const n = p => inbox.filter(l => l.play === p).length;
-  const cell = p => `<div class="cell" style="--c:${PLAYS[p].c}"><b>${p}</b><span class="num">${n(p)}</span><span>${PLAYS[p].owner}. ${PLAYS[p].action}.</span></div>`;
-  $('matrix').innerHTML = `<span></span><span class="ax">Lower value</span><span class="ax">Higher value (≥ ${gbp(D.value_cut * S.rate / D.commission_rate + S.extras / FX)})</span>
-    <span class="ax ay">Likely to book</span>${cell('Close cheaply')}${cell('Protect')}
-    <span class="ax ay">Less likely</span>${cell('Nurture')}${cell('Persuade')}`;
-}
-
-function renderRail() {
-  const order = ranked(S.rule);
-  const l = inbox.find(x => x.lead_id === S.sel) || order[0]; S.sel = l.lead_id;
-  rowMap.forEach((tr, id) => tr.classList.toggle('sel', id === S.sel));
-  const r = { arrival: ranked('arrival'), standard: ranked('standard'), priority: ranked('priority') };
-  const rk = rule => r[rule].findIndex(x => x.lead_id === l.lead_id) + 1;
-  const p = PLAYS[l.play];
-  const action = l.no_call && l.play !== 'Nurture' ? 'Personal WhatsApp from the owner (opted out of calls)' : p.action;
-  $('rail').innerHTML = `<div><span class="label">Lead #${l.lead_id} · arrived ${l.time} · from ${l.home_city}</span>
-      <h3 style="margin-top:6px">${l.university}</h3><p style="font-size:13.5px">${l.city === 'Other UK city' ? 'UK' : l.city} · ${l.room} · ${l.weeks}-week tenancy · moves in ${l.days_to_move_in} days</p></div>
-    <div class="calc"><span>Chance to book (model)</span><b>${pct(l.p_book)}</b>
-      <span>Commission: rent ${gbp(RENT[l.city + '|' + l.room])}/wk × ${l.weeks} wks × ${pct(S.rate)}</span><b>${gbp(l.commission)}</b>
-      <span>Extras: flights, money transfer, guarantor</span><b>${gbp(l.extras)}</b>
-      <span>Revenue if booked</span><b>${gbp(l.value)}</b>
+// ---- lead file (slides in) ----
+function openFile(id) { S.sel = id; S.open = true; $('file').hidden = false; $('scrim').hidden = false; renderFile(); render(); $('file').querySelector('.close').focus(); }
+function closeFile() { S.open = false; $('file').hidden = true; $('scrim').hidden = true; render(); }
+$('scrim').addEventListener('click', closeFile);
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && S.open) closeFile(); });
+function rankIn(rule, id) { const xs = leads.filter(l => l.attempts < LIMIT).sort((a, b) => keyOf[rule](b) - keyOf[rule](a) || a.arrival - b.arrival); const i = xs.findIndex(l => l.lead_id === id); return i < 0 ? '–' : '#' + (i + 1); }
+function renderFile() {
+  const l = leads.find(x => x.lead_id === S.sel); if (!l) return; enrich(l);
+  const lane = S.lane.get(l.lead_id) || 'nurture', L = LANES[lane];
+  const action = lane === 'experts' ? (l.no_call ? 'Personal WhatsApp from an expert (opted out of calls)' : l.highV && l.highP ? 'Call now and lock the room before a competitor does' : l.highV ? 'Consultative call: shortlist, price match, visa worries' : 'Quick call to qualify and book')
+    : lane === 'ai' ? 'AI call with a booking link; an expert takes over if the student hesitates' : l.attempts >= LIMIT ? `${LIMIT} calls without a booking: WhatsApp + email until they act` : 'WhatsApp + email sequence; re-scored on new activity';
+  $('file').innerHTML = `<div class="filetop"><div><span class="label">Lead #${l.lead_id} · ${l.attempts ? `enquired ${l.days_open} days ago · ${l.attempts} call${l.attempts > 1 ? 's' : ''}, not booked yet` : `new today, ${l.when}`} · from ${l.home_city}</span>
+      <h2 style="margin-top:6px">${l.university}</h2><p style="font-size:13.5px">${l.city === 'Other UK city' ? 'UK' : l.city} · ${l.room} · ${l.weeks}-week tenancy · moves in ${l.days_to_move_in} days</p></div>
+      <button type="button" class="close" aria-label="Close lead file">✕</button></div>
+    <div class="route" style="--c:${L.c}"><span class="label">Goes to · ${L.name}${lane === 'experts' ? ' · respond within ' + l.sla : ''}</span><b>${lane === 'experts' ? (l.highV && l.highP ? 'Senior expert' : 'Accommodation expert') : L.name}</b><span>${action}</span></div>
+    <div class="calc"><span>Chance at enquiry (model)</span><b>${pct(l.p_book)}</b>
+      ${l.days_open ? `<span>× still looking after ${l.days_open} days</span><b>× ${fadeF(l.days_open).toFixed(2)}</b><span class="tot">Chance to book now</span><b>${pct(l.p_now)}</b>` : ''}
+      <span>Commission: ${gbp(RENT[l.city + '|' + l.room])}/wk × ${l.weeks} wks × ${pct(S.rate)}</span><b>${gbp(l.commission)}</b>
+      <span>+ extras (flights, money transfer, guarantor)</span><b>${gbp(l.extras)}</b>
+      <span>× visa granted (Home Office)</span><b>× ${D.visa_grant.toFixed(2)}</b>
       <span class="tot">Priority (expected ₹)</span><b>${gbp(l.priority)}</b></div>
-    <div class="route" style="--c:${p.c}"><span class="label">${l.play} · respond within ${l.sla}</span><b>${p.owner}</b><span>${action}</span></div>
     <div><span class="label">Why</span><ul class="reasons">${reasons(l).map(x => `<li>${x}</li>`).join('')}</ul></div>
-    <div class="ranks"><span>Arrival #${rk('arrival')}</span><span>Standard #${rk('standard')}</span><span><b>Priority #${rk('priority')}</b></span></div>
-    ${S.reveal ? `<p style="font-size:13.5px"><strong>Outcome:</strong> ${l.booked ? 'this student booked' : 'this student did not book'}.</p>` : ''}
-    ${S.change && S.change.id === l.lead_id ? `<div class="change"><span class="label">Re-scored after ${S.change.what}</span>
-      <b>P(book) ${pct(S.change.p0)} → ${pct(l.p_book)} · ${S.change.play0} → ${l.play}</b>
-      <span>Queue rank #${S.change.r0} → #${rk(S.rule)} · respond within ${l.sla}</span></div>` : ''}
-    <div class="events"><span class="label">Live: something new happens with this student</span>
-      <div class="btns"><button type="button" class="ev" data-ev="browse">Returns and browses 15 more min</button>
-      <button type="button" class="ev" data-ev="form">Completes the enquiry form</button>
-      ${S.touched.size ? '<button type="button" class="ev reset" data-ev="reset">Reset the day</button>' : ''}</div></div>`;
-  $('rail').querySelectorAll('.ev').forEach(b => b.addEventListener('click', () => liveEvent(l, b.dataset.ev)));
+    <p style="font-size:13px">Rank today: <strong>${rankIn('priority', l.lead_id)}</strong> with Lead Desk · ${rankIn('standard', l.lead_id)} with standard score</p>
+    ${S.reveal ? `<p style="font-size:13px"><strong>Outcome:</strong> ${l.moved_on ? (l.booked ? 'had already booked elsewhere' : 'had already stopped looking') : l.booked ? 'this student booked' : 'this student did not book'}.</p>` : ''}
+    ${S.change && S.change.id === l.lead_id ? `<div class="change"><span class="label">Re-scored after ${S.change.what}</span><b>${pct(S.change.p0)} → ${pct(l.p_now)} · ${LANES[S.change.lane0].name} → ${L.name}</b></div>` : ''}
+    <div><span class="label">Something happens with this student</span><div class="dbtns" style="margin-top:8px">
+      <button type="button" class="btn" data-ev="browse">Returns, browses 15 min</button>
+      <button type="button" class="btn" data-ev="form">Completes the form</button>
+      <button type="button" class="btn" data-ev="miss" ${l.attempts >= LIMIT ? 'disabled' : ''}>Call unanswered</button></div></div>`;
+  $('file').querySelector('.close').addEventListener('click', closeFile);
+  $('file').querySelectorAll('[data-ev]').forEach(b => b.addEventListener('click', () => happen(l, b.dataset.ev)));
 }
-function liveEvent(l, ev) {
-  if (ev === 'reset') { inbox.forEach(x => Object.assign(x, ORIG.get(x.lead_id))); S.touched.clear(); S.change = null; render(true); return; }
-  const r0 = ranked(S.rule).findIndex(x => x.lead_id === l.lead_id) + 1, p0 = l.p_book, play0 = l.play;
-  if (ev === 'browse') { l.minutes_browsing += 15; l.visits = (l.visits || 0) + 1; }
-  if (ev === 'form') l.profile_fields_filled = 3;
-  l.p_book = predict(l); S.touched.add(l.lead_id);
-  S.change = { id: l.lead_id, what: ev === 'browse' ? 'a return visit (+15 min)' : 'a completed enquiry form', p0, play0, r0 };
-  render(true);
-  const tr = rowMap.get(l.lead_id); tr.classList.remove('flash'); void tr.offsetWidth; tr.classList.add('flash');
-  tr.scrollIntoView({ block: 'nearest', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+function happen(l, ev) {
+  const p0 = l.p_now, lane0 = S.lane.get(l.lead_id);
+  if (ev === 'browse') { l.minutes_browsing += 15; l.visits = (l.visits || 0) + 1; l.p_book = predict(l); }
+  if (ev === 'form') { l.profile_fields_filled = 3; l.p_book = predict(l); }
+  if (ev === 'miss') { l.attempts += 1; l.days_open += 2; }
+  S.touched.add(l.lead_id); render();
+  const lane1 = S.lane.get(l.lead_id), what = { browse: 'a return visit (+15 min)', form: 'a completed form', miss: 'an unanswered call (+2 days)' }[ev];
+  S.change = { id: l.lead_id, what, p0, lane0 }; S.flash = l.lead_id;
+  S.log.push(`<b>${l.university}</b> (#${l.lead_id}): ${what} → chance ${pct(p0)} → ${pct(l.p_now)}, ${LANES[lane0].name} → <b>${LANES[lane1].name}</b>`);
+  render();
 }
-function select(id) { S.sel = id; renderRail(); rowMap.forEach((tr, i) => tr.classList.toggle('sel', i === id)); if (matchMedia('(max-width:1000px)').matches) $('rail').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+$('ev-new').addEventListener('click', () => {
+  const f = D.race.fresh[S.fresh++]; if (!f) return;
+  const l = { ...f, attempts: 0, days_open: 0, moved_on: false, arrival: leads.length, when: 'just now' }; leads.push(l);
+  render(); const lane = S.lane.get(l.lead_id); S.tab = lane; S.flash = l.lead_id;
+  S.log.push(`New enquiry: <b>${l.university}</b>, ${place(l)} (#${l.lead_id}) → chance ${pct(l.p_now)}, ${gbp(l.priority)} expected → <b>${LANES[lane].name}</b>${lane === 'experts' ? ' · respond within ' + l.sla : ''}`);
+  render();
+  const r = document.querySelector(`.row[data-id="${l.lead_id}"]`); if (r) r.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+});
+$('ev-reset').addEventListener('click', () => { resetDay(); closeFile(); });
 
-// ---- simulation chart ----
+// ---- season race ----
 const NS = 'http://www.w3.org/2000/svg';
 const el = (t, a, p) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); p && p.appendChild(e); return e; };
-function drawSim() {
+const R = { cap: 25, season: 'normal', goal: 'revenue', day: D.race.days, timer: null };
+const RUN = [
+  { key: 'new_first', name: 'New leads first', note: 'a common habit', c: 'var(--nurture)', dash: '2 4' },
+  { key: 'standard', name: 'Standard score', note: 'normal lead scoring', c: 'var(--ink-2)', dash: '6 4' },
+  { key: 'ours', name: 'Lead Desk', note: '', c: 'var(--accent)', dash: '' },
+];
+const ourKey = () => R.goal === 'revenue' ? 'priority' : 'fade_only';
+function series(k) { const s = D.race[R.season][R.cap][k === 'ours' ? ourKey() : k]; return R.goal === 'revenue' ? s.revenue.map(v => v * FX) : s.bookings; }
+const fmtR = v => R.goal === 'revenue' ? '₹' + (v / 1e5).toFixed(0) + ' lakh' : Math.round(v) + ' bookings';
+function drawRace() {
+  const box = $('racechart'); box.innerHTML = '';
+  const W = 660, H = 270, Lm = 58, Rm = 14, T = 14, B = 32, days = D.race.days;
+  const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Cumulative results over 60 days' }, box);
+  const all = RUN.map(r => series(r.key)), top = Math.max(...all.map(s => s[days - 1]));
+  const unit = R.goal === 'revenue' ? 1e5 : 1, steps = [10, 20, 25, 50, 100, 200, 250, 500, 1000];
+  const step = steps.find(st => top / (st * unit) <= 5) * unit, ymax = Math.ceil(top * 1.04 / step) * step;   // round axis values
+  const x = d => Lm + d / (days - 1) * (W - Lm - Rm), y = v => T + (1 - v / ymax) * (H - T - B);
+  for (let v = 0; v <= ymax + 1e-6; v += step) {
+    el('line', { x1: Lm, x2: W - Rm, y1: y(v), y2: y(v), stroke: 'var(--rule)' }, svg);
+    el('text', { x: Lm - 8, y: y(v) + 4, 'text-anchor': 'end', 'font-size': 11, fill: 'var(--muted)', 'font-family': 'var(--mono)' }, svg).textContent = R.goal === 'revenue' ? '₹' + Math.round(v / 1e5) + 'L' : Math.round(v); }
+  [0, 10, 20, 30, 40, 50, 59].forEach(d => el('text', { x: x(d), y: H - B + 18, 'text-anchor': 'middle', 'font-size': 11, fill: 'var(--muted)', 'font-family': 'var(--mono)' }, svg).textContent = 'day ' + (d + 1));
+  el('line', { x1: x(29), x2: x(29), y1: T, y2: H - B, stroke: 'var(--rule)', 'stroke-dasharray': '3 3' }, svg);
+  el('text', { x: x(29) + 5, y: T + 10, 'font-size': 11, fill: 'var(--muted)' }, svg).textContent = 'new enquiries stop; follow-ups continue';
+  const upto = Math.max(1, R.day);
+  // the extra revenue: shaded between Lead Desk and standard scoring, growing day by day
+  const ours = all[2].slice(0, upto), std = all[1].slice(0, upto);
+  if (upto > 1) {
+    const d = ours.map((v, i) => `${x(i)},${y(v)}`).concat(std.map((v, i) => `${x(i)},${y(v)}`).reverse()).join(' ');
+    el('polygon', { points: d, fill: 'var(--accent)', opacity: 0.18 }, svg);
+  }
+  RUN.forEach((r, i) => { const s = all[i].slice(0, upto);
+    el('path', { d: s.map((v, d) => (d ? 'L' : 'M') + x(d) + ' ' + y(v)).join(' '), fill: 'none', stroke: r.c, 'stroke-width': r.key === 'ours' ? 3 : 2, 'stroke-dasharray': r.dash, 'stroke-linejoin': 'round' }, svg);
+    el('circle', { cx: x(upto - 1), cy: y(s[upto - 1]), r: r.key === 'ours' ? 5 : 3.5, fill: r.c, stroke: 'var(--surface)', 'stroke-width': 2 }, svg); });
+  const base = all[1][upto - 1], gap = all[2][upto - 1] - base;
+  if (upto > 3) {   // live counter beside the gap
+    const gx = x(upto - 1) - 6, gy = y(all[2][upto - 1]) - 12;    // just above the Lead Desk line, right-aligned to today's point
+    el('text', { x: gx, y: gy, 'text-anchor': 'end', 'font-size': 13, 'font-weight': 700, fill: 'var(--accent)', 'font-family': 'var(--mono)', 'paint-order': 'stroke', stroke: 'var(--surface)', 'stroke-width': 4 }, svg).textContent =
+      (gap >= 0 ? '+' : '−') + (R.goal === 'revenue' ? '₹' + Math.abs(gap / 1e5).toFixed(0) + ' lakh' : Math.abs(Math.round(gap)) + ' bookings');
+  }
+  const g30 = all[2][29] - all[1][29], g60 = all[2][days - 1] - all[1][days - 1];
+  const fmtG = v => (v >= 0 ? '+' : '−') + (R.goal === 'revenue' ? '₹' + Math.abs(v / 1e5).toFixed(0) + ' lakh' : Math.abs(Math.round(v)) + ' bookings');
+  $('race-cap').innerHTML = `The shaded area is the extra ${R.goal === 'revenue' ? 'revenue' : 'bookings'} from the <strong>same team and the same leads</strong>${upto < days ? `: ${fmtG(gap)} by day ${upto}` : ''}. `
+    + (g60 < g30
+      ? `It builds fastest while new enquiries keep arriving: <strong>${fmtG(g30)} by day 30</strong>. The test then stops new enquiries, so both teams work through what's left and standard scoring catches up a little: ${fmtG(g60)} by day 60. In real life enquiries keep coming, which is when Lead Desk pulls ahead.`
+      : `<strong>${fmtG(g30)} by day 30</strong>, while new enquiries arrive. With a team this stretched there's still a backlog after the test stops new enquiries, and Lead Desk keeps choosing better from it: <strong>${fmtG(g60)} by day 60</strong>.`);
+  $('runners').innerHTML = `<span class="daytag">Day ${upto} of ${days}</span>` + RUN.map((r, i) => { const v = all[i][upto - 1], g = base ? v / base - 1 : 0;
+    return `<div class="runner" style="--c:${r.c}"><span>${r.name}${r.key === 'ours' ? ` · ${R.goal === 'revenue' ? 'chance × time × value' : 'chance × time'}` : ' · ' + r.note}</span><b>${fmtR(v)}</b><small>${r.key === 'standard' ? 'baseline' : (g >= 0 ? '+' : '') + (g * 100).toFixed(1) + '% vs standard'}</small></div>`; }).join('')
+    + `<p style="font-size:12.5px">${R.goal === 'revenue' ? 'Optimising revenue: about the same bookings, more money per booking.' : 'Optimising bookings: rank by chance × time only. More students placed, and still more revenue than standard.'}</p>`;
+}
+function playRace() {
+  clearInterval(R.timer); R.day = 1; $('r-play').textContent = '⏸ Running…';
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { R.day = D.race.days; drawRace(); $('r-play').textContent = '▶ Run again'; return; }
+  R.timer = setInterval(() => { R.day += 1; drawRace(); if (R.day >= D.race.days) { clearInterval(R.timer); $('r-play').textContent = '▶ Run again'; } }, 70);
+}
+function segWire(id, onPick) { $(id).querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+  $(id).querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); onPick(b.dataset.v); })); }
+$('r-cap').innerHTML = D.race.caps.map(c => `<button type="button" data-v="${c}" aria-pressed="${c === R.cap}">${c}</button>`).join('');
+segWire('r-cap', v => { R.cap = +v; playRace(); }); segWire('r-season', v => { R.season = v; playRace(); }); segWire('r-goal', v => { R.goal = v; playRace(); });
+$('r-play').addEventListener('click', playRace);
+
+// ---- proof + evidence ----
+function renderProof() {
+  const P = D.pipe, k = P.caps.indexOf(25), k10 = P.caps.indexOf(10), cur = P.curve;
+  const g25 = cur.priority[k][0] / cur.standard[k][0] - 1, g10 = cur.priority[k10][0] / cur.standard[k10][0] - 1;
+  $('tiles').innerHTML = [
+    [D.metrics.auc.toFixed(2), `model AUC on ${D.metrics.test_leads.toLocaleString()} leads it never saw; about 85% of its top 20% book, against 38.5% overall`],
+    [sg(g25), 'more revenue than standard scoring at 25 expert calls a day, over 60 days, with about the same bookings'],
+    [sg(g10), 'when the team is most stretched (10 calls a day), as in peak season'],
+    [sg(P.rejected.priority_worst), 'worst case across every stress test, including students who behave differently from the data'],
+  ].map(([b, s]) => `<div class="tile"><b>${b}</b><span>${s}</span></div>`).join('');
+  const beTxt = P.breakeven.breakeven_drop != null ? ` It holds unless expensive-room enquirers book about ${Math.round(P.breakeven.breakeven_drop * 100)}% less often than others.` : ' It held even when expensive-room enquirers booked 50% less often.';
+  $('proof-note').innerHTML = `Both parts matter: value alone ${sg(P.parts.value_only[0] / P.parts.standard[0] - 1)}, time fade alone ${sg(P.parts.fade_only[0] / P.parts.standard[0] - 1)}, together ${sg(g25)}. <strong>Tested and dropped:</strong> ranking by move-in urgency (${sg(P.rejected.with_urgency)}), and lowering each lead's chance per unanswered call (it fell to ${sg(P.rejected.with_call_fatigue_worst)} if students needed one more call). A simple 5-call limit is more robust.${beTxt}`;
+  const X = D.experiments;
+  $('x-models').innerHTML = X.models.map((m, i) => `<tr class="${i === 0 ? 'best' : ''}"><td>${m.name}</td><td class="r num">${m.auc.toFixed(3)}</td><td class="r num">${pct(m.top20_precision)}</td></tr>`).join('');
+  $('x-ablation').innerHTML = X.ablations.map((a, i) => `<div class="bar" style="--w:${((a.auc - .5) / .5 * 100).toFixed(0)}%;--c:${i === 0 ? 'var(--accent)' : 'var(--ink-2)'}"><span>${a.name}</span><b>${a.auc.toFixed(3)}</b><i></i></div>`).join('');
+  $('x-lift').textContent = `${pct(X.form_answers.without.top20_precision)} → ${pct(X.form_answers.with.top20_precision)}`;
+  $('x-lift-s').textContent = `top-20% precision · AUC ${X.form_answers.without.auc.toFixed(3)} → ${X.form_answers.with.auc.toFixed(3)}`;
+  const base = P.parts.standard[0];
+  $('x-parts').innerHTML = [['Value only', 'value_only'], ['Time fade only', 'fade_only'], ['Both (Lead Desk)', 'priority']].map(([n, k2]) => `<div><span class="label">${n}</span><b>${sg(P.parts[k2][0] / base - 1)}</b></div>`).join('');
+  $('x-robust').innerHTML = P.robust.map(r => `<div><span class="label">${r.name.replace('Rs ', '₹')}</span><b>${sg(r.gain)}</b></div>`).join('');
+  $('x-mismatch').innerHTML = P.mismatch.map(r => `<div><span class="label">${r.name}</span><b>${sg(r.priority)}</b></div>`).join('');
+  const BE = P.breakeven;
+  $('x-be').innerHTML = BE.rows.map(r => `<div><span class="label">${r.drop ? r.drop * 100 + '% less often' : 'As in the data'}</span><b class="${r.gain >= 0 ? 'pos' : 'neg'}">${sg(r.gain)}</b><span class="label">${pct(r.high_rate)} vs ${pct(r.low_rate)} book</span></div>`).join('');
+  $('x-be-note').innerHTML = BE.breakeven_drop != null
+    ? `<strong>Break-even: Lead Desk keeps winning unless expensive-room enquirers book about ${Math.round(BE.breakeven_drop * 100)}% less often than the data shows.</strong> University Living can check this in minutes: compare booking rates for high- and low-rent enquiries in its CRM.`
+    : `<strong>Lead Desk kept winning even when expensive-room enquirers booked 50% less often.</strong> University Living can confirm this in minutes by comparing booking rates for high- and low-rent enquiries in its CRM.`;
+  const PL = P.pilot;
+  $('pilot').innerHTML = `Route half of new leads with Lead Desk and half the current way, chosen at random. Compare <strong>revenue per expert-hour</strong> and bookings. With about ${PL.leads_per_day} leads a day, detecting the gain takes roughly <strong>${PL.days} day${PL.days === 1 ? '' : 's'} of leads</strong> (95% confidence, 80% power; a conservative estimate from the 60-day test). With more leads a day it's proportionally faster, and University Living's real volume is likely far higher. Then decide with its own numbers.`;
+  $('x-rejected').innerHTML = `<strong>Ideas I tested and dropped:</strong> lowering each lead's chance per unanswered call using the bank curve won when students behaved like the bank's customers (${sg(P.rejected.with_call_fatigue_normal)}) but fell to ${sg(P.rejected.with_call_fatigue_worst)} if they needed one more call. Ranking by move-in urgency: ${sg(P.rejected.with_urgency)}.`;
+}
+function drawCurve() {
   const box = $('simchart'); box.innerHTML = '';
-  const W = 600, H = 260, L = 46, R = 14, T = 14, B = 34;
-  const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Revenue versus standard score by calls per day' }, box);
-  const base = D.sim.probability, rel = name => D.sim[name].map((r, i) => [r[0], (r[1] / base[i][1] - 1) * 100]);
+  const P = D.pipe, xs = P.caps, base = P.curve.standard, W = 600, H = 220, L = 46, Rm = 14, T = 16, B = 32;
+  const rel = n => P.curve[n].map((r, i) => [xs[i], (r[0] / base[i][0] - 1) * 100]);
   const pr = rel('priority'), ur = rel('with_urgency');
-  const xs = base.map(r => r[0]), x0 = xs[0], x1 = xs[xs.length - 1], ymin = -10, ymax = 25;
-  const x = v => L + (v - x0) / (x1 - x0) * (W - L - R), y = v => T + (ymax - v) / (ymax - ymin) * (H - T - B);
-  [-10, -5, 0, 5, 10, 15, 20, 25].forEach(g => {
-    el('line', { x1: L, x2: W - R, y1: y(g), y2: y(g), stroke: 'var(--rule)', 'stroke-width': g === 0 ? 0 : 1 }, svg);
-    el('text', { x: L - 8, y: y(g) + 4, 'text-anchor': 'end', 'font-size': 11, fill: 'var(--muted)', 'font-family': 'var(--mono)' }, svg).textContent = (g > 0 ? '+' : '') + g + '%';
-  });
+  const ymin = -15, ymax = Math.max(30, Math.ceil((Math.max(...pr.map(p => p[1])) + 3) / 5) * 5);
+  const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Revenue gain by calls per day' }, box);
+  const x = v => L + (v - xs[0]) / (xs[xs.length - 1] - xs[0]) * (W - L - Rm), y = v => T + (ymax - v) / (ymax - ymin) * (H - T - B);
+  for (let g = ymin; g <= ymax; g += 5) { el('line', { x1: L, x2: W - Rm, y1: y(g), y2: y(g), stroke: 'var(--rule)', 'stroke-width': g === 0 ? 0 : 1 }, svg);
+    el('text', { x: L - 8, y: y(g) + 4, 'text-anchor': 'end', 'font-size': 11, fill: 'var(--muted)', 'font-family': 'var(--mono)' }, svg).textContent = (g > 0 ? '+' : '') + g + '%'; }
   xs.forEach(v => el('text', { x: x(v), y: H - B + 18, 'text-anchor': 'middle', 'font-size': 11, fill: 'var(--muted)', 'font-family': 'var(--mono)' }, svg).textContent = v);
-  el('text', { x: L + (W - L - R) / 2, y: H - 2, 'text-anchor': 'middle', 'font-size': 12, fill: 'var(--muted)' }, svg).textContent = 'expert calls per day (about 92 leads arrive daily)';
-  el('line', { x1: L, x2: W - R, y1: y(0), y2: y(0), stroke: 'var(--ink-2)', 'stroke-width': 1.5, 'stroke-dasharray': '2 3' }, svg);
-  const kx = Math.min(Math.max(S.k, x0), x1);
-  el('line', { x1: x(kx), x2: x(kx), y1: T, y2: H - B, stroke: 'var(--accent)', 'stroke-width': 1, opacity: .35 }, svg);
-  el('text', { x: x(kx) + 5, y: T + 10, 'font-size': 11, fill: 'var(--accent)', 'font-family': 'var(--mono)' }, svg).textContent = `today: ${S.k}`;
+  el('text', { x: L + (W - L - Rm) / 2, y: H - 2, 'text-anchor': 'middle', 'font-size': 11.5, fill: 'var(--muted)' }, svg).textContent = 'expert calls per day (about 92 leads arrive daily)';
+  el('line', { x1: L, x2: W - Rm, y1: y(0), y2: y(0), stroke: 'var(--ink-2)', 'stroke-width': 1.5, 'stroke-dasharray': '2 3' }, svg);
+  const q = Math.min(xs[xs.length - 1], Math.max(xs[0], S.cap - S.cb));
+  el('line', { x1: x(q), x2: x(q), y1: T, y2: H - B, stroke: 'var(--accent)', 'stroke-width': 1, opacity: .45 }, svg);
+  el('text', { x: x(q) + 5, y: T + 4, 'font-size': 11, fill: 'var(--accent)', 'font-family': 'var(--mono)' }, svg).textContent = `your team today: ${q}`;
   const path = pts => pts.map((p, i) => (i ? 'L' : 'M') + x(p[0]) + ' ' + y(p[1])).join(' ');
   el('path', { d: path(ur), fill: 'none', stroke: 'var(--muted)', 'stroke-width': 2, 'stroke-dasharray': '5 4' }, svg);
-  el('path', { d: path(pr), fill: 'none', stroke: 'var(--accent)', 'stroke-width': 2.5, 'stroke-linejoin': 'round' }, svg);
-  pr.forEach(p => el('circle', { cx: x(p[0]), cy: y(p[1]), r: 3.5, fill: 'var(--accent)', stroke: 'var(--surface)', 'stroke-width': 1.5 }, svg));
-  el('text', { x: x(pr[0][0]) + 8, y: y(pr[0][1]) + 4, 'font-size': 12, fill: 'var(--ink)', 'font-weight': 600 }, svg).textContent = `+${pr[0][1].toFixed(0)}% when stretched`;
-  const tip = document.createElement('div'); tip.className = 'tip'; tip.hidden = true; box.appendChild(tip);
-  const hit = el('rect', { x: L, y: T, width: W - L - R, height: H - T - B, fill: 'transparent' }, svg);
-  hit.addEventListener('mousemove', e => {
-    const r = svg.getBoundingClientRect(), fx = x0 + ((e.clientX - r.left) / r.width * W - L) / (W - L - R) * (x1 - x0);
-    let i = 0; xs.forEach((v, j) => { if (Math.abs(v - fx) < Math.abs(xs[i] - fx)) i = j; });
-    tip.innerHTML = `${xs[i]} calls/day<br>Priority ${pr[i][1] >= 0 ? '+' : ''}${pr[i][1].toFixed(1)}%<br>× urgency ${ur[i][1] >= 0 ? '+' : ''}${ur[i][1].toFixed(1)}%<br>Arrival order ${((D.sim.arrival[i][1] / base[i][1] - 1) * 100).toFixed(0)}%`;
-    tip.hidden = false; const bx = box.getBoundingClientRect(); let tx = e.clientX - bx.left + 12; if (tx + tip.offsetWidth > bx.width) tx -= tip.offsetWidth + 24;
-    tip.style.left = tx + 'px'; tip.style.top = (e.clientY - bx.top - 40) + 'px';
-  });
-  hit.addEventListener('mouseleave', () => tip.hidden = true);
-  const at25 = pr[xs.indexOf(25)][1], arr25 = (D.sim.arrival[xs.indexOf(25)][1] / base[xs.indexOf(25)][1] - 1) * 100;
-  $('sim-note').innerHTML = `At 25 calls a day, priority earns <strong>${at25 >= 0 ? '+' : ''}${at25.toFixed(1)}%</strong> more revenue than standard scoring with the same team, and both beat arrival order by about ${Math.abs(arr25).toFixed(0)}%. With a large team the rules converge. The gain is largest in <strong>peak season (July–September)</strong>, when leads spike and experts are stretched. Adding urgency to the ranking made results worse, so urgency sets the response deadline instead. A single day, like the queue above, varies more than this 30-day average.`;
+  el('path', { d: path(pr), fill: 'none', stroke: 'var(--accent)', 'stroke-width': 2.5 }, svg);
+  pr.forEach(p => { el('circle', { cx: x(p[0]), cy: y(p[1]), r: 3.5, fill: 'var(--accent)', stroke: 'var(--surface)', 'stroke-width': 1.5 }, svg);
+    el('text', { x: x(p[0]), y: y(p[1]) - 9, 'text-anchor': 'middle', 'font-size': 10.5, fill: 'var(--ink-2)', 'font-family': 'var(--mono)' }, svg).textContent = '+' + p[1].toFixed(0) + '%'; });
 }
 
-// ---- new lead scorer ----
+// ---- scorer ----
 const F = id => $(id);
 function scoreNew() {
   const l = { channel_source: F('n-source').value, channel_origin: F('n-origin').value, city: F('n-city').value, room: F('n-room').value,
     weeks: +F('n-weeks').value, minutes_browsing: +F('n-min').value, days_to_move_in: +F('n-days').value, visits: +F('n-visits').value,
-    pages_per_visit: 2.5, profile_fields_filled: +F('n-profile').value, no_call: F('n-nocall').checked ? 1 : 0, no_email: 0 };
+    pages_per_visit: 2.5, profile_fields_filled: +F('n-profile').value, no_call: F('n-nocall').checked ? 1 : 0, no_email: 0, attempts: 0, days_open: 0 };
   ['min', 'days', 'visits', 'profile'].forEach(k => F('o-' + k).textContent = F('n-' + k).value);
   l.p_book = predict(l); enrich(l);
-  const rank = inbox.filter(x => keyOf[S.rule](x) > keyOf[S.rule](l)).length + 1, p = PLAYS[l.play];
-  const action = l.no_call && l.play !== 'Nurture' ? 'Personal WhatsApp from the owner (opted out of calls)' : p.action;
+  const q = Math.max(0, S.cap - S.cb), rank = leads.filter(x => x.attempts < LIMIT && keyOf[S.rule](x) > keyOf[S.rule](l)).length + 1;
+  const lane = rank <= q ? 'experts' : (l.highP && !l.no_call) ? 'ai' : 'nurture';
   $('n-result').innerHTML = `<div class="big"><b>${gbp(l.priority)}</b><span class="label">expected revenue from this lead</span></div>
-    <div class="grid3"><div><span class="label">P(book)</span><b>${pct(l.p_book)}</b></div><div><span class="label">Value</span><b>${gbp(l.value)}</b></div><div><span class="label">Today's rank</span><b>#${rank} / ${inbox.length + 1}</b></div></div>
-    <div class="route" style="--c:${p.c}"><span class="label">${l.play} · respond within ${l.sla}</span><b>${p.owner}</b><span>${action}</span></div>
-    <p style="font-size:13.5px">${rank <= S.k ? `Gets an expert today: it lands inside the top ${S.k}.` : `Below today's expert capacity (top ${S.k}), so it goes to the ${l.highP ? 'AI voice agent' : 'nurture sequence'} first.`}</p>
+    <div class="grid3"><div><span class="label">Chance to book</span><b>${pct(l.p_now)}</b></div><div><span class="label">Revenue if booked</span><b>${gbp(l.value)}</b></div><div><span class="label">Queue rank today</span><b>#${rank}</b></div></div>
+    <div class="route" style="--c:${LANES[lane].c}"><span class="label">Goes to${lane === 'experts' ? ' · respond within ' + l.sla : ''}</span><b>${LANES[lane].name}</b><span>${LANES[lane].blurb}</span></div>
     <ul class="reasons">${reasons(l).map(x => `<li>${x}</li>`).join('')}</ul>`;
 }
 
-// ---- stress tests ----
-function renderStress() {
-  const X = D.experiments;
-  $('x-models').innerHTML = X.models.map((m, i) => `<tr class="${i === 0 ? 'best' : ''}"><td>${m.name}</td><td class="r num">${m.auc.toFixed(3)}</td><td class="r num">${pct(m.top20_precision)}</td></tr>`).join('');
-  $('x-ablation').innerHTML = X.ablations.map((a, i) => `<div class="bar" style="--w:${((a.auc - .5) / .5 * 100).toFixed(0)}%;--c:${i === 0 ? 'var(--accent)' : 'var(--ink-2)'}"><span>${a.name}</span><b>${a.auc.toFixed(3)}</b><i></i></div>`).join('');
-  const f = X.form_answers;
-  $('x-lift').textContent = `${pct(f.without.top20_precision)} → ${pct(f.with.top20_precision)}`;
-  $('x-lift-s').textContent = `top-20% precision · AUC ${f.without.auc.toFixed(3)} → ${f.with.auc.toFixed(3)}`;
-  $('x-extras').innerHTML = X.extras.map(r => `<div><span class="label">Extras ₹${r.extras_inr.toLocaleString('en-IN')}</span><b>+${(r.gain * 100).toFixed(1)}%</b></div>`).join('');
-  $('x-sens').innerHTML = X.sensitivity.map(r => `<div><span class="label">Leads lost ×${r.loss_multiplier}</span><b>+${(r.gain * 100).toFixed(1)}%</b></div>`).join('');
-}
-
 // ---- wiring ----
-document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => {
-  S.rule = b.dataset.rule; document.querySelectorAll('.seg button').forEach(x => x.setAttribute('aria-pressed', x === b)); render(true);
-}));
-$('k').addEventListener('input', e => { S.k = +e.target.value; render(false); });
-$('rate').addEventListener('input', e => { S.rate = +e.target.value / 100; render(false); });
-$('extras').addEventListener('input', e => { S.extras = +e.target.value; render(false); });
-$('reveal').addEventListener('change', e => { S.reveal = e.target.checked; render(false); });
-document.querySelector('.stress').addEventListener('toggle', e => { e.target.querySelector('.more').textContent = e.target.open ? 'Hide the stress tests' : 'Show the stress tests'; });
+document.querySelectorAll('.routehead .seg button').forEach(b => b.addEventListener('click', () => {
+  S.rule = b.dataset.rule; document.querySelectorAll('.routehead .seg button').forEach(x => x.setAttribute('aria-pressed', x === b)); render(); }));
+const MIN_Q = 10;   // the season test covers 10+ queue calls a day, so callbacks never squeeze the queue below that
+function fitCallbacks() { const mx = Math.max(0, Math.min(10, S.cap - MIN_Q)); $('cb').max = mx; if (S.cb > mx) S.cb = mx; $('cb').value = S.cb; }
+$('cap').addEventListener('input', e => { S.cap = +e.target.value; fitCallbacks(); render(); });
+$('cb').addEventListener('input', e => { S.cb = +e.target.value; fitCallbacks(); render(); });
+$('extras').addEventListener('input', e => { S.extras = +e.target.value; render(); });
+$('reveal').addEventListener('change', e => { S.reveal = e.target.checked; render(); });
 $('newlead').addEventListener('input', scoreNew); $('newlead').addEventListener('submit', e => e.preventDefault());
+$('fold').addEventListener('toggle', e => { $('fold-btn').textContent = e.target.open ? 'Hide the evidence ↑' : 'Show the evidence ↓'; if (e.target.open) drawCurve(); });
 $('m-auc').textContent = `Model AUC ${D.metrics.auc.toFixed(2)} on ${D.metrics.test_leads.toLocaleString()} unseen leads`;
-$('h-train').textContent = D.metrics.train_leads.toLocaleString(); $('h-auc').textContent = D.metrics.auc.toFixed(2);
-renderStress();
-render(false);
+resetDay(); fitCallbacks(); render(); drawRace(); renderProof(); drawCurve();
 </script>

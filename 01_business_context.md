@@ -64,3 +64,17 @@ These are filled in **by the sales team after contacting the lead**, so they are
 - **Lead Profile** (a level assigned to the lead)
 - **Last Activity / Last Notable Activity** (mix in sales actions like "SMS Sent" and "Had a Phone Conversation")
 - **Asymmetrique Activity/Profile Index/Score** (opaque third-party scores, 46% missing, assignment time unknown)
+
+## 6. A lead's whole life, and how each stage is handled
+A booking takes days to weeks, so on any day the team juggles new leads **and** ongoing ones.
+
+| Stage | What happens | How the engine handles it | Evidence |
+|---|---|---|---|
+| Enquiry arrives | Student enquires on a property | Chance at enquiry from the booking model; value known from the property | X Education leads |
+| First contact | Expert or AI agent calls | High-value, likely leads: expert within 5 minutes | MIT/InsideSales: ~21x more likely to qualify within 5 min than at 30 |
+| Follow-ups | More calls, shortlists, student thinks it over | Up to 5 calls; after 5 unanswered calls, nurture until the student acts again | UCI Bank Marketing: by the 5th call a call converts at under half the rate of the 1st |
+| Lead goes cold | Stops replying, books elsewhere | Chance fades with days open, so fresh leads win the next call | Olist: half of deals close within 14 days, 66% within 30 |
+| New activity | Student returns to the site, fills the form | Re-scored instantly and moves up | Model + live re-scoring |
+| Booking → visa → move-in | No Visa, No Pay | Revenue counted after visa risk | Home Office: ~96% of Indian students' UK study visas granted |
+
+**One queue, one rule:** every lead, new or ongoing, is ranked by *chance to book now × revenue value*. In a 60-day test where every way of working gets the same calls and the same 5-call limit, this earned 11% more revenue than standard scoring at 25 calls a day (29% when the team is most stretched), with about the same number of bookings. If the goal is more students rather than more revenue, ranking by chance × time alone gives about 7% more bookings and 7% more revenue. Move-in urgency and precise per-call fatigue were tested and dropped.
